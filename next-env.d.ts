@@ -1,3 +1,7 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:879741880b6ab48da99dcc06dcc674d381c9826137b0496bf7bb368f302de9fc
-size 81
+/// <reference types="next" />
+/// <reference types="next/image-types/global" />
+// NOTE: This file should not be edited
+// see https://nextjs.org/docs/basic-features/typescript for more information.
+/// <reference types="next/image-types/global" />
+// Note: This file should not be edited
+// see https://nextjs.org/docs/basic-features/typescript for more information.
