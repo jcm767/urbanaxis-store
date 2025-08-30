@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "https://www.theurbanaxis.com/:path*",
+      "destination": "https://theurbanaxis.com/:path*",
+      "permanent": true
+    }
+  ]
+}
