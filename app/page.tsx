@@ -1,6 +1,6 @@
 // app/page.tsx
 import Link from 'next/link';
-import products from '@/lib/products';
+import { products } from '@/lib/products';
 
 export default function Home() {
   const featured = products.slice(0, 4);
