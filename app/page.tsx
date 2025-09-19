@@ -12,7 +12,13 @@ export default function Home() {
           <Link key={p.slug} href={`/products/${p.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
             <div style={{ border: '1px solid #eee', borderRadius: 8, padding: 12 }}>
               <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', marginBottom: 8 }}>
-                <Image src={p.image} alt={p.name} fill sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: 'cover', borderRadius: 6 }} />
+                <Image
+                  src={p.image ?? '/placeholder.svg'}
+                  alt={p.name}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                  style={{ objectFit: 'cover', borderRadius: 6 }}
+                />
               </div>
               <h3 style={{ margin: '8px 0' }}>{p.name}</h3>
               <p style={{ margin: 0, color: '#555' }}>${p.price.toFixed(2)}</p>

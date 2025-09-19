@@ -1,36 +1,58 @@
-// components/BuyButton.tsx
-"use client";
-import { useState } from "react";
+'use client';
 
-type Props = {
-  slug: string;
-  defaultSize?: string;
-  defaultColor?: string;
+import { useState } from 'react';
+
+type BuyButtonProps = {
+  name: string;
+  price: number;            // in USD (e.g., 19.99)
+  color?: string | null;
+  size?: string | null;
+  quantity?: number;        // defaults to 1
+  label?: string;           // button text
 };
 
-export default function BuyButton({ slug, defaultSize = "M", defaultColor = "Black" }: Props) {
-  const [loading, setLoading] = useState(false);
+export default function BuyButton(props: BuyButtonProps) {
+  const {
+    name,
+    price,
+    color = undefined,
+    size = undefined,
+    quantity = 1,
+    label = 'Buy Now',
+  } = props;
 
-  async function goCheckout() {
+  const [loading, setLoading] = useState(false);
+  const disabled = loading || !name || !Number.isFinite(price);
+
+  async function onClick() {
     try {
       setLoading(true);
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          slug,
-          size: defaultSize,
-          color: defaultColor,
-          quantity: 1,
+          name,
+          price,
+          quantity,
+          color: color ?? undefined,
+          size: size ?? undefined,
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Checkout failed");
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`Checkout failed (${res.status}) ${text}`);
+      }
 
-      window.location.href = data.url; // Go to Stripe Checkout
-    } catch (e: any) {
-      alert(e.message || "Checkout failed");
+      const data: { url?: string } = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert('Stripe session URL missing.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert(err?.message ?? 'Checkout error');
     } finally {
       setLoading(false);
     }
@@ -38,11 +60,20 @@ export default function BuyButton({ slug, defaultSize = "M", defaultColor = "Bla
 
   return (
     <button
-      onClick={goCheckout}
-      disabled={loading}
-      style={{ padding: "8px 12px", border: "1px solid #ccc", borderRadius: 6 }}
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        padding: '12px 16px',
+        borderRadius: 8,
+        border: '1px solid #111',
+        background: disabled ? '#ddd' : '#111',
+        color: '#fff',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        width: '100%',
+      }}
+      aria-busy={loading}
     >
-      {loading ? "Loading..." : "Buy"}
+      {loading ? 'Processing…' : label}
     </button>
   );
 }
