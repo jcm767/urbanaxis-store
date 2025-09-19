@@ -98,3 +98,4 @@ export const products: Product[] = [
       "https://www.aliexpress.us/item/3256809111025598.html",
   },
 ];
+export default products;
