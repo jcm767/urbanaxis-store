@@ -4,10 +4,12 @@ import Stripe from 'stripe';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-async function readRawBody(req: Request) { return await req.text(); }
+async function readRawBody(req: Request) {
+  return await req.text();
+}
 
 export async function POST(req: Request) {
-  // If webhook secrets aren’t set, exit gracefully to keep builds healthy
+  // Graceful no-op if not configured
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   const stripeKey = process.env.STRIPE_SECRET_KEY;
   if (!secret || !stripeKey) {
@@ -35,4 +37,15 @@ export async function POST(req: Request) {
           amount_total: s.amount_total,
           metadata: s.metadata
         });
-        // NOTE: Do NOT import Supabase at the top of this file.
+        break;
+      }
+      default:
+        break;
+    }
+  } catch (e) {
+    console.error('Webhook handler error', e);
+    return new NextResponse('Webhook error', { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}
