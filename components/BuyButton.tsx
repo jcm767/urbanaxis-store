@@ -3,8 +3,7 @@
 import { useState } from 'react';
 
 type BuyButtonProps = {
-  name: string;
-  price: number;            // in USD (e.g., 19.99)
+  slug: string;
   color?: string | null;
   size?: string | null;
   quantity?: number;        // defaults to 1
@@ -13,8 +12,7 @@ type BuyButtonProps = {
 
 export default function BuyButton(props: BuyButtonProps) {
   const {
-    name,
-    price,
+    slug,
     color = undefined,
     size = undefined,
     quantity = 1,
@@ -22,7 +20,7 @@ export default function BuyButton(props: BuyButtonProps) {
   } = props;
 
   const [loading, setLoading] = useState(false);
-  const disabled = loading || !name || !Number.isFinite(price);
+  const disabled = loading || !slug;
 
   async function onClick() {
     try {
@@ -31,8 +29,7 @@ export default function BuyButton(props: BuyButtonProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name,
-          price,
+          slug,
           quantity,
           color: color ?? undefined,
           size: size ?? undefined,

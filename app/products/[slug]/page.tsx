@@ -9,7 +9,6 @@ export default function ProductDetail({ params }: PageProps) {
   const product = products.find((p: any) => p.slug === params.slug);
   if (!product) return notFound();
 
-  // Access optional fields using a loose cast so TS doesn't require them on Product
   const pAny = product as any;
   const color: string | undefined = pAny?.colors?.[0];
   const size: string | undefined = pAny?.sizes?.[0];
@@ -35,8 +34,7 @@ export default function ProductDetail({ params }: PageProps) {
           </strong>
 
           <BuyButton
-            name={product.name}
-            price={product.price}
+            slug={product.slug}
             color={color}
             size={size}
             quantity={1}
