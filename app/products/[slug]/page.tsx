@@ -24,22 +24,13 @@ export default function ProductDetail({ params }: PageProps) {
             style={{ objectFit: 'cover', borderRadius: 8 }}
           />
         </div>
-
         <div>
           <h1 style={{ marginBottom: 8 }}>{product.name}</h1>
           <p style={{ marginBottom: 16, color: '#555' }}>{product.description}</p>
           <strong style={{ display: 'block', marginBottom: 16 }}>
             ${product.price.toFixed(2)}
           </strong>
-
-          <BuyButton
-            name={product.name}
-            price={product.price}
-            color={color}
-            size={size}
-            quantity={1}
-          />
-
+          <BuyButton name={product.name} price={product.price} color={color} size={size} quantity={1} />
           <div style={{ marginTop: 12 }}>
             <a href={product.sourceUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: '#555' }}>
               View on AliExpress

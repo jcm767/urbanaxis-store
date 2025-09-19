@@ -9,7 +9,6 @@ async function readRawBody(req: Request) {
 }
 
 export async function POST(req: Request) {
-  // Graceful no-op if not configured
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   const stripeKey = process.env.STRIPE_SECRET_KEY;
   if (!secret || !stripeKey) {
