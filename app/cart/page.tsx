@@ -1,0 +1,232 @@
+// app/cart/page.tsx
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import {
+  CartItem,
+  getCart,
+  setCart,
+  updateQty,
+  updateSize,
+  removeItem,
+  clearCart,
+} from '@/lib/cart';
+
+const FALLBACK_SIZES = ['XS', 'S', 'M', 'L', 'XL'];
+
+export default function CartPage() {
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Load cart on mount + when other tabs update it
+  useEffect(() => {
+    setItems(getCart());
+    const onChange = () => setItems(getCart());
+    window.addEventListener('cart:update', onChange);
+    return () => window.removeEventListener('cart:update', onChange);
+  }, []);
+
+  const subtotal = useMemo(
+    () => items.reduce((sum, it) => sum + it.price * it.qty, 0),
+    [items]
+  );
+
+  function handleQty(slug: string, size: string | null, qty: number) {
+    updateQty(slug, size, qty);
+    setItems(getCart());
+  }
+
+  function handleSize(slug: string, oldSize: string | null, newSize: string | null) {
+    updateSize(slug, oldSize, newSize);
+    setItems(getCart());
+  }
+
+  function handleRemove(slug: string, size: string | null) {
+    removeItem(slug, size);
+    setItems(getCart());
+  }
+
+  async function checkout() {
+    try {
+      setLoading(true);
+      // keep cart persisted just in case
+      setCart(items);
+      const res = await fetch('/api/checkout', { method: 'POST' });
+      const data = await res.json();
+      if (data?.url) window.location.href = data.url;
+      else alert('Checkout error');
+    } catch (e: any) {
+      alert(e?.message ?? 'Checkout failed');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!items.length) {
+    return (
+      <main style={{ maxWidth: 960, margin: '24px auto', padding: '0 16px' }}>
+        <h1 style={{ marginBottom: 12 }}>Your Cart</h1>
+        <p>Your cart is empty.</p>
+        <Link href="/products" style={{ color: '#111', borderBottom: '1px solid #111', textDecoration: 'none' }}>
+          Browse products →
+        </Link>
+      </main>
+    );
+  }
+
+  return (
+    <main style={{ maxWidth: 960, margin: '24px auto', padding: '0 16px' }}>
+      <h1 style={{ marginBottom: 12 }}>Your Cart</h1>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
+        {items.map((it) => (
+          <div
+            key={`${it.slug}-${it.size ?? 'nosize'}`}
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '96px 1fr',
+              gap: 12,
+              border: '1px solid #eee',
+              borderRadius: 12,
+              padding: 12,
+              background: '#fff',
+            }}
+          >
+            <div
+              style={{
+                width: 96,
+                height: 96,
+                background: '#f4f4f5',
+                display: 'grid',
+                placeItems: 'center',
+                fontSize: 12,
+              }}
+            >
+              IMG
+            </div>
+
+            <div style={{ display: 'grid', gap: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                <div>
+                  <div style={{ fontWeight: 700 }}>{it.title}</div>
+                  <div style={{ fontSize: 13, color: '#666' }}>${it.price.toFixed(2)}</div>
+                </div>
+                <button
+                  onClick={() => handleRemove(it.slug, it.size ?? null)}
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid #eee',
+                    borderRadius: 8,
+                    padding: '6px 10px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Remove
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                {/* Size selector */}
+                <label style={{ fontSize: 14 }}>
+                  Size:{' '}
+                  <select
+                    value={it.size ?? ''}
+                    onChange={(e) =>
+                      handleSize(it.slug, it.size ?? null, e.target.value || null)
+                    }
+                    style={{ padding: '6px 8px', border: '1px solid #ddd', borderRadius: 6 }}
+                  >
+                    <option value="">Select</option>
+                    {FALLBACK_SIZES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {/* Quantity selector */}
+                <label style={{ fontSize: 14 }}>
+                  Qty:{' '}
+                  <input
+                    type="number"
+                    min={1}
+                    max={99}
+                    value={it.qty}
+                    onChange={(e) =>
+                      handleQty(it.slug, it.size ?? null, Number(e.target.value))
+                    }
+                    style={{
+                      width: 72,
+                      padding: '6px 8px',
+                      border: '1px solid #ddd',
+                      borderRadius: 6,
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Summary */}
+      <div
+        style={{
+          marginTop: 16,
+          marginLeft: 'auto',
+          maxWidth: 420,
+          border: '1px solid #eee',
+          borderRadius: 12,
+          padding: 16,
+          background: '#fafafa',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+          <span>Subtotal</span>
+          <strong>${subtotal.toFixed(2)}</strong>
+        </div>
+        <div style={{ fontSize: 12, color: '#666', marginBottom: 12 }}>
+          Taxes and shipping calculated at checkout.
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            onClick={checkout}
+            disabled={loading}
+            style={{
+              background: '#111',
+              color: '#fff',
+              border: '1px solid #111',
+              borderRadius: 10,
+              padding: '10px 14px',
+              cursor: 'pointer',
+              flex: 1,
+            }}
+          >
+            {loading ? 'Redirecting…' : 'Checkout'}
+          </button>
+          <button
+            onClick={() => {
+              if (confirm('Clear all items from cart?')) {
+                clearCart();
+                setItems([]);
+              }
+            }}
+            style={{
+              background: 'transparent',
+              color: '#111',
+              border: '1px solid #ddd',
+              borderRadius: 10,
+              padding: '10px 14px',
+              cursor: 'pointer',
+            }}
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+    </main>
+  );
+}
