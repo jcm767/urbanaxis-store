@@ -1,35 +1,182 @@
+// app/page.tsx
 import Link from 'next/link';
-import Image from 'next/image';
-import { products } from '@/lib/products';
+import products from '@/lib/products';
 
 export default function Home() {
+  const featured = products.slice(0, 4);
+
   return (
-    <main style={{ padding: 24, display: 'grid', gap: 20 }}>
-      <h1>Urban Axis Store</h1>
+    <div>
+      {/* HERO */}
+      <section
+        style={{
+          position: 'relative',
+          display: 'grid',
+          placeItems: 'center',
+          minHeight: '52vh',
+          padding: 24,
+          background:
+            'linear-gradient(135deg, #111 0%, #222 40%, #111 100%)',
+          color: '#fff',
+          textAlign: 'center',
+        }}
+      >
+        <div style={{ maxWidth: 900 }}>
+          <h1 style={{ margin: 0, fontSize: 36, lineHeight: 1.1, letterSpacing: 0.5 }}>
+            Urban Axis
+          </h1>
+          <p style={{ opacity: 0.9, marginTop: 10, fontSize: 16 }}>
+            Minimal, edgy, and engineered for movement. New drops weekly.
+          </p>
+          <div style={{ marginTop: 18, display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link
+              href="/products"
+              style={{
+                background: '#fff',
+                color: '#111',
+                borderRadius: 999,
+                padding: '12px 18px',
+                textDecoration: 'none',
+                border: '1px solid #fff',
+                fontWeight: 600,
+              }}
+            >
+              Shop Now
+            </Link>
+            <Link
+              href="/men/tops"
+              style={{
+                background: 'transparent',
+                color: '#fff',
+                borderRadius: 999,
+                padding: '12px 18px',
+                textDecoration: 'none',
+                border: '1px solid #fff',
+              }}
+            >
+              Explore Men
+            </Link>
+            <Link
+              href="/women/tops"
+              style={{
+                background: 'transparent',
+                color: '#fff',
+                borderRadius: 999,
+                padding: '12px 18px',
+                textDecoration: 'none',
+                border: '1px solid #fff',
+              }}
+            >
+              Explore Women
+            </Link>
+          </div>
+        </div>
+      </section>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
-        {products.map((p) => (
-          <Link key={p.slug} href={`/products/${p.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-            <div style={{ border: '1px solid #eee', borderRadius: 8, padding: 12 }}>
-              <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', marginBottom: 8 }}>
-                <Image
-                  src={p.image ?? '/placeholder.svg'}
-                  alt={p.name}
-                  fill
-                  sizes="(max-width: 768px) 100vw, 33vw"
-                  style={{ objectFit: 'cover', borderRadius: 6 }}
-                />
+      {/* FEATURED CATEGORIES */}
+      <section style={{ maxWidth: 1200, margin: '28px auto 8px', padding: '0 16px' }}>
+        <h2 style={{ fontSize: 20, marginBottom: 16 }}>Featured Categories</h2>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))',
+            gap: 12,
+          }}
+        >
+          <CategoryCard title="Men — Tops" href="/men/tops" />
+          <CategoryCard title="Men — Bottoms" href="/men/bottoms" />
+          <CategoryCard title="Men — Jackets" href="/men/jackets" />
+          <CategoryCard title="Men — Accessories" href="/men/accessories" />
+          <CategoryCard title="Women — Tops" href="/women/tops" />
+          <CategoryCard title="Women — Bottoms" href="/women/bottoms" />
+          <CategoryCard title="Women — Jackets" href="/women/jackets" />
+          <CategoryCard title="Women — Accessories" href="/women/accessories" />
+        </div>
+      </section>
+
+      {/* FEATURED PRODUCTS */}
+      <section style={{ maxWidth: 1200, margin: '24px auto', padding: '0 16px' }}>
+        <h2 style={{ fontSize: 20, marginBottom: 16 }}>New & Noteworthy</h2>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))',
+            gap: 16,
+          }}
+        >
+          {featured.map((p) => (
+            <Link
+              key={p.slug}
+              href={`/products/${p.slug}`}
+              style={{
+                textDecoration: 'none',
+                color: '#111',
+                border: '1px solid #eee',
+                borderRadius: 12,
+                overflow: 'hidden',
+                background: '#fff',
+              }}
+            >
+              <div
+                style={{
+                  aspectRatio: '1/1',
+                  background: '#f4f4f5',
+                  display: 'grid',
+                  placeItems: 'center',
+                  fontSize: 12,
+                  letterSpacing: 0.4,
+                }}
+              >
+                IMG
               </div>
-              <h3 style={{ margin: '8px 0' }}>{p.name}</h3>
-              <p style={{ margin: 0, color: '#555' }}>${p.price.toFixed(2)}</p>
-            </div>
+              <div style={{ padding: 12 }}>
+                <div style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.2 }}>{p.title}</div>
+                <div style={{ fontSize: 13, color: '#666', marginTop: 4 }}>${p.price.toFixed(2)}</div>
+              </div>
+            </Link>
+          ))}
+        </div>
+        <div style={{ textAlign: 'center', marginTop: 18 }}>
+          <Link
+            href="/products"
+            style={{ textDecoration: 'none', color: '#111', borderBottom: '1px solid #111', paddingBottom: 2 }}
+          >
+            View all products →
           </Link>
-        ))}
-      </div>
+        </div>
+      </section>
+    </div>
+  );
+}
 
-      <div style={{ marginTop: 8 }}>
-        <Link href="/products">View all products →</Link>
+function CategoryCard({ title, href }: { title: string; href: string }) {
+  return (
+    <Link
+      href={href}
+      style={{
+        display: 'block',
+        textDecoration: 'none',
+        color: '#111',
+        border: '1px solid #eee',
+        borderRadius: 12,
+        overflow: 'hidden',
+        background: '#fff',
+      }}
+    >
+      <div
+        style={{
+          aspectRatio: '3/2',
+          background:
+            'linear-gradient(135deg, #f4f4f5 0%, #ececee 100%)',
+          display: 'grid',
+          placeItems: 'center',
+          fontSize: 12,
+          letterSpacing: 0.4,
+        }}
+      >
+        COVER
       </div>
-    </main>
+      <div style={{ padding: 12, fontWeight: 600, fontSize: 14 }}>{title}</div>
+    </Link>
   );
 }
