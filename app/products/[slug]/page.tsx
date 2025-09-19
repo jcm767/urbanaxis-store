@@ -33,7 +33,7 @@ export default function ProductDetail({ params }: PageProps) {
             ${product.price.toFixed(2)}
           </strong>
 
-          {/* ✅ Pass slug only, not name/price */}
+          {/* ✅ BuyButton only gets slug, color, size, quantity */}
           <BuyButton
             slug={product.slug}
             color={color}
@@ -42,7 +42,12 @@ export default function ProductDetail({ params }: PageProps) {
           />
 
           <div style={{ marginTop: 12 }}>
-            <a href={product.sourceUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: '#555' }}>
+            <a
+              href={product.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              style={{ fontSize: 12, color: '#555' }}
+            >
               View on AliExpress
             </a>
           </div>
