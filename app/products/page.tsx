@@ -9,10 +9,10 @@ export default function ProductDetail({ params }: PageProps) {
   const product = products.find((p: any) => p.slug === params.slug);
   if (!product) return notFound();
 
-  // Allow catalogs without variants
-  const anyProduct = product as any;
-  const color: string | undefined = anyProduct?.colors?.[0];
-  const size: string | undefined = anyProduct?.sizes?.[0];
+  // Cast to any so TS doesn't require these fields on Product
+  const pAny = product as any;
+  const color: string | undefined = pAny?.colors?.[0];
+  const size: string | undefined = pAny?.sizes?.[0];
 
   return (
     <main style={{ maxWidth: 960, margin: '0 auto', padding: 24 }}>
