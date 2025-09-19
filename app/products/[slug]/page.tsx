@@ -6,31 +6,42 @@ import BuyButton from '@/components/BuyButton';
 type PageProps = { params: { slug: string } };
 
 export default function ProductDetail({ params }: PageProps) {
-  const product = products.find((p) => p.slug === params.slug);
+  const product = products.find((p: any) => p.slug === params.slug);
   if (!product) return notFound();
 
-  const color = product.colors?.[0];
-  const size = product.sizes?.[0];
+  // Access optional fields using a loose cast so TS doesn't require them on Product
+  const pAny = product as any;
+  const color: string | undefined = pAny?.colors?.[0];
+  const size: string | undefined = pAny?.sizes?.[0];
 
   return (
     <main style={{ maxWidth: 960, margin: '0 auto', padding: 24 }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
         <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1' }}>
           <Image
-            src={product.image}
+            src={product.image ?? '/placeholder.svg'}
             alt={product.name}
             fill
             sizes="(max-width: 900px) 100vw, 50vw"
             style={{ objectFit: 'cover', borderRadius: 8 }}
           />
         </div>
+
         <div>
           <h1 style={{ marginBottom: 8 }}>{product.name}</h1>
           <p style={{ marginBottom: 16, color: '#555' }}>{product.description}</p>
           <strong style={{ display: 'block', marginBottom: 16 }}>
             ${product.price.toFixed(2)}
           </strong>
-          <BuyButton name={product.name} price={product.price} color={color} size={size} quantity={1} />
+
+          <BuyButton
+            name={product.name}
+            price={product.price}
+            color={color}
+            size={size}
+            quantity={1}
+          />
+
           <div style={{ marginTop: 12 }}>
             <a href={product.sourceUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: '#555' }}>
               View on AliExpress
