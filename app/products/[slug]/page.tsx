@@ -33,6 +33,7 @@ export default function ProductDetail({ params }: PageProps) {
             ${product.price.toFixed(2)}
           </strong>
 
+          {/* ✅ Pass slug only, not name/price */}
           <BuyButton
             slug={product.slug}
             color={color}
