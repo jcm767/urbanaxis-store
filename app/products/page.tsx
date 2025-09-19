@@ -1,53 +1,48 @@
+import Link from 'next/link';
 import Image from 'next/image';
-import { notFound } from 'next/navigation';
 import { products } from '@/lib/products';
 import BuyButton from '@/components/BuyButton';
 
-type PageProps = { params: { slug: string } };
-
-export default function ProductDetail({ params }: PageProps) {
-  const product = products.find((p: any) => p.slug === params.slug);
-  if (!product) return notFound();
-
-  // Cast to any so TS doesn't require these fields on Product
-  const pAny = product as any;
-  const color: string | undefined = pAny?.colors?.[0];
-  const size: string | undefined = pAny?.sizes?.[0];
-
+export default function ProductsPage() {
   return (
-    <main style={{ maxWidth: 960, margin: '0 auto', padding: 24 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-        <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1' }}>
-          <Image
-            src={product.image ?? '/placeholder.svg'}
-            alt={product.name}
-            fill
-            sizes="(max-width: 900px) 100vw, 50vw"
-            style={{ objectFit: 'cover', borderRadius: 8 }}
-          />
-        </div>
+    <main style={{ padding: 24, maxWidth: 1100, margin: '0 auto' }}>
+      <h1 style={{ marginBottom: 24 }}>Products</h1>
 
-        <div>
-          <h1 style={{ marginBottom: 8 }}>{product.name}</h1>
-          <p style={{ marginBottom: 16, color: '#555' }}>{product.description}</p>
-          <strong style={{ display: 'block', marginBottom: 16 }}>
-            ${product.price.toFixed(2)}
-          </strong>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+          gap: 16,
+        }}
+      >
+        {products.map((p: any) => {
+          const imgSrc = p.image ?? '/placeholder.svg';
+          return (
+            <div key={p.slug} style={{ border: '1px solid #eee', borderRadius: 8, padding: 12 }}>
+              <Link
+                href={`/products/${p.slug}`}
+                style={{ textDecoration: 'none', color: 'inherit' }}
+              >
+                <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', marginBottom: 8 }}>
+                  <Image
+                    src={imgSrc}
+                    alt={p.name}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 25vw"
+                    style={{ objectFit: 'cover', borderRadius: 6 }}
+                  />
+                </div>
+                <h3 style={{ margin: '8px 0' }}>{p.name}</h3>
+                <p style={{ margin: 0, color: '#555' }}>${Number(p.price).toFixed(2)}</p>
+              </Link>
 
-          <BuyButton
-            name={product.name}
-            price={product.price}
-            color={color}
-            size={size}
-            quantity={1}
-          />
-
-          <div style={{ marginTop: 12 }}>
-            <a href={product.sourceUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: '#555' }}>
-              View on AliExpress
-            </a>
-          </div>
-        </div>
+              <div style={{ marginTop: 10 }}>
+                {/* ✅ BuyButton only needs slug (qty optional) */}
+                <BuyButton slug={p.slug} quantity={1} />
+              </div>
+            </div>
+          );
+        })}
       </div>
     </main>
   );
