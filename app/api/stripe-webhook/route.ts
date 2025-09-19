@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-// ❌ Do NOT import supabase here at module scope
-// import { getSupabaseAdmin } from '@/lib/supabaseAdmin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -9,11 +7,10 @@ export const dynamic = 'force-dynamic';
 async function readRawBody(req: Request) { return await req.text(); }
 
 export async function POST(req: Request) {
+  // If webhook secrets aren’t set, exit gracefully to keep builds healthy
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   const stripeKey = process.env.STRIPE_SECRET_KEY;
-
   if (!secret || !stripeKey) {
-    // Graceful no-op if not configured yet.
     return NextResponse.json({ ok: true, note: 'Webhook not configured' });
   }
 
@@ -38,18 +35,4 @@ export async function POST(req: Request) {
           amount_total: s.amount_total,
           metadata: s.metadata
         });
-        // If you later want to save to Supabase:
-        // const db = getSupabaseAdmin();
-        // await db.from('orders').insert({ ... })
-        break;
-      }
-      default:
-        break;
-    }
-  } catch (e) {
-    console.error('Webhook handler error', e);
-    return new NextResponse('Webhook error', { status: 500 });
-  }
-
-  return NextResponse.json({ ok: true });
-}
+        // NOTE: Do NOT import Supabase at the top of this file.
