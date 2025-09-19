@@ -1,35 +1,28 @@
-// app/page.tsx
-import Image from "next/image";
-import { products } from "@/lib/products";
-import BuyButton from "@/components/BuyButton";
+import Link from 'next/link';
+import Image from 'next/image';
+import { products } from '@/lib/products';
 
 export default function Home() {
   return (
-    <main style={{ padding: 24, maxWidth: 1000, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 28, marginBottom: 16 }}>Urban Axis Store</h1>
+    <main style={{ padding: 24, display: 'grid', gap: 20 }}>
+      <h1>Urban Axis Store</h1>
 
-      <div style={{ display: "grid", gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
         {products.map((p) => (
-          <div key={p.slug} style={{ border: "1px solid #eee", padding: 16 }}>
-            <h2 style={{ margin: "0 0 8px", fontSize: 20 }}>{p.name}</h2>
-            <p style={{ margin: "0 0 8px" }}>${p.price.toFixed(2)}</p>
-            <p style={{ margin: "0 0 12px", color: "#555" }}>{p.description}</p>
-
-            {p.image ? (
-              <Image
-                src={p.image}
-                alt={p.name}
-                width={320}
-                height={320}
-                style={{ objectFit: "cover", borderRadius: 8 }}
-              />
-            ) : null}
-
-            <div style={{ marginTop: 12 }}>
-              <BuyButton slug={p.slug} />
+          <Link key={p.slug} href={`/products/${p.slug}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+            <div style={{ border: '1px solid #eee', borderRadius: 8, padding: 12 }}>
+              <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1', marginBottom: 8 }}>
+                <Image src={p.image} alt={p.name} fill sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: 'cover', borderRadius: 6 }} />
+              </div>
+              <h3 style={{ margin: '8px 0' }}>{p.name}</h3>
+              <p style={{ margin: 0, color: '#555' }}>${p.price.toFixed(2)}</p>
             </div>
-          </div>
+          </Link>
         ))}
+      </div>
+
+      <div style={{ marginTop: 8 }}>
+        <Link href="/products">View all products →</Link>
       </div>
     </main>
   );
