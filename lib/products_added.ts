@@ -7,7 +7,7 @@ const added = [
   {
     title: 'Washed Straight Cargo Jeans',
     slug: 'washed-straight-cargo-jeans-a',
-    price: 64.00,
+    price: 42.99,
     category: 'bottoms',
     gender: 'men',
     tags: ['jeans','denim','cargo','men','streetwear'],
@@ -65,7 +65,7 @@ const added = [
   {
     title: 'No Money But Love Pullover Hoodie',
     slug: 'no-money-but-love-hoodie',
-    price: 48.00,
+    price: 28.00,
     category: 'tops',
     gender: 'men', // change to 'women' or remove for unisex if you prefer
     tags: ['hoodie','pullover','graphic','unisex','streetwear'],
@@ -84,7 +84,7 @@ const added = [
   {
     title: 'Minimal Street Graphic Top',
     slug: 'minimal-street-graphic-top',
-    price: 32.00,
+    price: 22.00,
     category: 'tops',
     gender: 'men',
     tags: ['top','tee','graphic','streetwear','unisex'],
