@@ -22,7 +22,66 @@ export function getSlug(p: AnyProduct) {
   return slugify(base);
 }
 export function getImage(p: AnyProduct): string | undefined {
-  return p?.image_url ?? p?.image ?? p?.img ?? undefined;
+  // common fields
+  return p?.image_url ?? p?.image ?? p?.img ?? (Array.isArray(p?.images) ? p.images[0] : undefined);
+}
+export function getDescription(p: AnyProduct) {
+  return p?.description ?? p?.desc ?? '';
+}
+export function getCategory(p: AnyProduct) {
+  return p?.category ?? p?.type ?? '';
+}
+export function getGender(p: AnyProduct) {
+  return p?.gender ?? p?.section ?? '';
+}
+export function getTags(p: AnyProduct): string[] {
+  if (Array.isArray(p?.tags)) return p.tags;
+  if (typeof p?.tags === 'string') return p.tags.split(',').map((t: string) => t.trim()).filter(Boolean);
+  return [];
+}
+
+/** Return available colors for a product if present. Looks at:
+ *  - p.colors (['black','white',...])
+ *  - p.variants[].color
+ *  - Object.keys(p.imagesByColor)
+ */
+export function getColors(p: AnyProduct): string[] {
+  if (Array.isArray(p?.colors) && p.colors.length) return p.colors;
+  if (Array.isArray(p?.variants)) {
+    const set = new Set<string>();
+    for (const v of p.variants) if (v?.color) set.add(String(v.color));
+    if (set.size) return Array.from(set);
+  }
+  if (p?.imagesByColor && typeof p.imagesByColor === 'object') {
+    return Object.keys(p.imagesByColor);
+  }
+  return [];
+}
+
+/** Given a color, try to find the best image for that color. */
+export function getImageForColor(p: AnyProduct, color?: string): string | undefined {
+  if (!color) return getImage(p);
+  const c = String(color).toLowerCase();
+  // imagesByColor: { black: '...', beige: '...' } or { black: ['url1','url2'] }
+  const map = p?.imagesByColor;
+  if (map && typeof map === 'object') {
+    const hit = map[color] ?? map[c];
+    if (Array.isArray(hit)) return hit[0];
+    if (typeof hit === 'string') return hit;
+  }
+  // variants fallback
+  if (Array.isArray(p?.variants)) {
+    const v = p.variants.find((v: any) => String(v?.color ?? '').toLowerCase() === c);
+    if (v?.image_url) return v.image_url;
+    if (v?.image) return v.image;
+    if (Array.isArray(v?.images) && v.images[0]) return v.images[0];
+  }
+  // tag-based guess (e.g., p.images = ['img-black.jpg', 'img-white.jpg'])
+  if (Array.isArray(p?.images)) {
+    const guess = p.images.find((u: string) => typeof u === 'string' && u.toLowerCase().includes(c));
+    if (guess) return guess;
+  }
+  return getImage(p);
 }
 
 export function getAllProducts(): AnyProduct[] {
