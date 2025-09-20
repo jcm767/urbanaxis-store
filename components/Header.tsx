@@ -1,3 +1,4 @@
+// updated header to mount MiniCart
 // components/Header.tsx
 'use client';
 
@@ -5,6 +6,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import SearchBar from '@/components/SearchBar';
 import CartButton from '@/components/CartButton';
+import MiniCart from '@/components/MiniCart';
 
 export default function Header() {
   const [scrolled, setScrolled] = useState(false);
@@ -27,6 +29,7 @@ export default function Header() {
         <SearchBar />
         <CartButton />
       </div>
+        <MiniCart />
     </header>
   );
 }

@@ -22,6 +22,8 @@ function read(): CartItem[] {
 }
 
 function write(items: CartItem[]) {
+  // Fire-and-forget sync to server (optional)
+  try { syncToServer(items); } catch (e) {}
   if (typeof window === 'undefined') return;
   localStorage.setItem(CART_KEY, JSON.stringify(items));
   window.dispatchEvent(new Event('cart:update'));
@@ -76,3 +78,24 @@ export function removeItem(slug: string, size: string | null, color: string | nu
 }
 
 export function clearCart() { write([]); }
+
+
+async function syncToServer(items: CartItem[]) {
+  try {
+    // Try to fetch user id via supabase client (optional)
+    let user_id: string | null = null;
+    try {
+      const mod = await import('@/lib/supabaseClient');
+      // @ts-ignore
+      const { data } = await mod.supabase.auth.getUser();
+      // @ts-ignore
+      user_id = data?.user?.id ?? null;
+    } catch {}
+
+    await fetch('/api/cart-sync', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ items, user_id })
+    });
+  } catch {}
+}
