@@ -1,4 +1,14 @@
-import rawProducts from '@/lib/products';
+/* UA_MERGE_PRODUCTS_ADDED */ 
+import baseProducts from '@/lib/products';
+let addedProducts: any[] = [];
+try {
+  // Try sync require (works in Next/TS bundlers); falls back harmlessly if file missing
+  // @ts-ignore
+  addedProducts = require('@/lib/products_added').default || [];
+} catch {}
+const rawProducts: any[] = (Array.isArray(baseProducts) ? baseProducts : []);
+export default rawProducts;
+
 
 export type AnyProduct = any;
 
@@ -84,9 +94,7 @@ export function getImageForColor(p: AnyProduct, color?: string): string | undefi
   return getImage(p);
 }
 
-export function getAllProducts(): AnyProduct[] {
-  return Array.isArray(rawProducts) ? rawProducts : [];
-}
+export function getAllProducts(): AnyProduct[] { return (Array.isArray(rawProducts)?rawProducts:[]).concat(Array.isArray(addedProducts)?addedProducts:[]); }
 
 export function getBySlug(slug: string): AnyProduct | undefined {
   const list = getAllProducts();
