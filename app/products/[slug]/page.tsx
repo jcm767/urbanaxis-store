@@ -1,55 +1,75 @@
-import Image from 'next/image';
-import { notFound } from 'next/navigation';
-import { products } from '@/lib/products';
-import BuyButton from '@/components/BuyButton';
+// app/products/[slug]/page.tsx
+'use client';
 
-type PageProps = { params: { slug: string } };
+import { useMemo, useState } from 'react';
+import { addItem } from '@/lib/cart';
+import { getBySlug, getName, getPrice, getSlug, getImage } from '@/lib/productUtils';
 
-export default function ProductDetail({ params }: PageProps) {
-  const product = products.find((p: any) => p.slug === params.slug);
-  if (!product) return notFound();
+const DEFAULT_SIZES = ['XS','S','M','L','XL'];
 
-  const pAny = product as any;
-  const color: string | undefined = pAny?.colors?.[0];
-  const size: string | undefined = pAny?.sizes?.[0];
+export default function ProductDetail({ params }: { params: { slug: string } }) {
+  const product = useMemo(()=>getBySlug(params.slug), [params.slug]);
+  if (!product) {
+    return (
+      <main style={{ maxWidth: 900, margin:'24px auto', padding:'0 16px' }}>
+        <h1>Product not found</h1>
+      </main>
+    );
+  }
+
+  const name = getName(product);
+  const price = getPrice(product);
+  const slug = getSlug(product);
+  const img = getImage(product);
+  // If your product already has sizes, you can read them here (e.g., product.sizes)
+  const sizes: string[] = Array.isArray((product as any)?.sizes) && (product as any).sizes.length
+    ? (product as any).sizes
+    : DEFAULT_SIZES;
+
+  const [size, setSize] = useState<string | ''>('');
+  const [qty, setQty] = useState<number>(1);
 
   return (
-    <main style={{ maxWidth: 960, margin: '0 auto', padding: 24 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-        <div style={{ position: 'relative', width: '100%', aspectRatio: '1/1' }}>
-          <Image
-            src={product.image ?? '/placeholder.svg'}
-            alt={product.name}
-            fill
-            sizes="(max-width: 900px) 100vw, 50vw"
-            style={{ objectFit: 'cover', borderRadius: 8 }}
-          />
+    <main style={{ maxWidth: 1000, margin:'24px auto', padding:'0 16px' }}>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+        {/* Image */}
+        <div style={{ border:'1px solid #eee', borderRadius:12, overflow:'hidden', background:'#f4f4f5', minHeight:320, display:'grid', placeItems:'center' }}>
+          {img ? <img src={img} alt={name} style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : 'IMG'}
         </div>
 
+        {/* Content */}
         <div>
-          <h1 style={{ marginBottom: 8 }}>{product.name}</h1>
-          <p style={{ marginBottom: 16, color: '#555' }}>{product.description}</p>
-          <strong style={{ display: 'block', marginBottom: 16 }}>
-            ${product.price.toFixed(2)}
-          </strong>
+          <h1 style={{ marginTop:0 }}>{name}</h1>
+          <div style={{ fontSize:18, fontWeight:700, marginBottom:12 }}>${price.toFixed(2)}</div>
+          <p style={{ color:'#555' }}>{(product as any)?.description ?? '—'}</p>
 
-          {/* ✅ BuyButton only gets slug, color, size, quantity */}
-          <BuyButton
-            slug={product.slug}
-            color={color}
-            size={size}
-            quantity={1}
-          />
+          {/* Size selector */}
+          <label style={{ display:'block', marginTop:12, marginBottom:8 }}>
+            Size
+            <select value={size} onChange={(e)=>setSize(e.target.value)} style={{ display:'block', marginTop:6, padding:'8px 10px', border:'1px solid #ddd', borderRadius:8, width:'100%', maxWidth:240 }}>
+              <option value="">Select a size</option>
+              {sizes.map((s)=>(
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </label>
 
-          <div style={{ marginTop: 12 }}>
-            <a
-              href={product.sourceUrl}
-              target="_blank"
-              rel="noreferrer"
-              style={{ fontSize: 12, color: '#555' }}
+          {/* Quantity */}
+          <label style={{ display:'block', marginTop:12, marginBottom:8 }}>
+            Quantity
+            <input type="number" min={1} max={99} value={qty} onChange={(e)=>setQty(Math.max(1, Math.min(99, Number(e.target.value)||1)))} style={{ display:'block', marginTop:6, padding:'8px 10px', border:'1px solid #ddd', borderRadius:8, width:120 }} />
+          </label>
+
+          <div style={{ display:'flex', gap:8, marginTop:16 }}>
+            <button
+              onClick={()=>{
+                addItem({ slug, title: name, price, qty, size: size || null, image: img });
+                alert('Added to cart');
+              }}
+              style={{ border:'1px solid #111', background:'#111', color:'#fff', borderRadius:10, padding:'10px 14px', cursor:'pointer' }}
             >
-              View on AliExpress
-            </a>
+              Add to Cart
+            </button>
           </div>
         </div>
       </div>
