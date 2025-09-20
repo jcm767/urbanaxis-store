@@ -4,40 +4,10 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { addItem } from '@/lib/cart';
-import QuickView from '@/components/QuickView';
-import RecentlyViewed from '@/components/RecentlyViewed';
 import {
   getAllProducts, getName, getPrice, getSlug, getImageForColor,
-  getImage, getDescription, getCategory, getTags, getGender, getColors
+  getImage, getDescription, getCanonicalCategory, getTags, getGender, getColors, getSearchKeywords
 } from '@/lib/productUtils';
-
-const SYNONYMS: Record<string, string[]> = {
-  tshirt: ['t-shirt','tee','tees','tshirt','shirt','shirts','top','tops','graphic tee','graphic tees'],
-  shirt:  ['tshirt','t-shirt','tee','tees','shirt','shirts','top','tops'],
-  top:    ['tops','tshirt','t-shirt','tee','tees','shirt','shirts','blouse','crop','tank'],
-  jacket: ['jacket','jackets','coat','coats','outerwear','windbreaker','parka','puffer','hooded'],
-  pant:   ['pant','pants','trouser','trousers','bottom','bottoms','cargo','jeans','denim','jogger','sweatpants'],
-  short:  ['short','shorts'],
-  hoodie: ['hoodie','hoodies','sweatshirt','sweater','pullover','zip'],
-  accessory: ['accessory','accessories','belt','hat','cap','beanie','bag','scarf','sunglasses','jewelry','ring','necklace','bracelet'],
-  women:  ['women','womens','female','ladies','woman'],
-  men:    ['men','mens','male','man'],
-};
-
-function expandQuery(q: string): string[] {
-  const parts = q.toLowerCase().split(/[^a-z0-9]+/g).filter(Boolean);
-  const out = new Set<string>();
-  for (const token of parts) {
-    out.add(token);
-    for (const [root, syns] of Object.entries(SYNONYMS)) {
-      if (token === root || syns.includes(token)) {
-        out.add(root);
-        syns.forEach(s => out.add(s));
-      }
-    }
-  }
-  return Array.from(out);
-}
 
 const ALL_SIZES = ['XS','S','M','L','XL','XXL'];
 
@@ -50,11 +20,10 @@ export default function ProductsIndex() {
   const [minPrice, setMinPrice] = useState<string>('');
   const [maxPrice, setMaxPrice] = useState<string>('');
   const [colorFilter, setColorFilter] = useState<string>(''); // single color
-  const [sizeFilter, setSizeFilter] = useState<string>('');   // simple global size filter (detail pages still have per-product sizes)
+  const [sizeFilter, setSizeFilter] = useState<string>('');   // simple global size filter
 
   const filtered = useMemo(() => {
-    const base = q.trim();
-    const terms = base ? expandQuery(base) : [];
+    const terms = q.trim().toLowerCase().split(/[^a-z0-9]+/g).filter(Boolean);
 
     return all.filter((p: any) => {
       const price = getPrice(p);
@@ -74,11 +43,10 @@ export default function ProductsIndex() {
       }
 
       if (!terms.length) return true;
-      const hay = [
-        getName(p), getDescription(p), getCategory(p), getGender(p),
-        ...getTags(p), ...getColors(p)
-      ].join(' ').toLowerCase();
-      return terms.every(t => hay.includes(t));
+
+      // Search across name/desc/tags + canonical category synonyms
+      const hay = getSearchKeywords(p);
+      return terms.every(t => hay.some(h => h.includes(t)));
     });
   }, [all, q, minPrice, maxPrice, colorFilter, sizeFilter]);
 
@@ -95,7 +63,7 @@ export default function ProductsIndex() {
 
       <div style={{ display:'grid', gridTemplateColumns:'260px 1fr', gap:16 }}>
         {/* Filters */}
-        <aside style={{ border:'1px solid #eee', borderRadius:12, padding:12, height:'fit-content' }}>
+        <aside style={{ border:'1px solid var(--border)', borderRadius:12, padding:12, height:'fit-content' }}>
           <form onSubmit={(e)=>e.preventDefault()} style={{ display:'grid', gap:12 }}>
             <div>
               <div style={{ fontWeight:600, marginBottom:6 }}>Search</div>
@@ -103,7 +71,7 @@ export default function ProductsIndex() {
                 value={q}
                 onChange={(e)=>setQ(e.target.value)}
                 placeholder="shirts, jackets, hoodies…"
-                style={{ width:'100%', padding:'10px 12px', border:'1px solid #ddd', borderRadius:8 }}
+                style={{ width:'100%', padding:'10px 12px', border:'1px solid var(--border)', borderRadius:8, background:'var(--card)', color:'var(--text)' }}
               />
             </div>
 
@@ -112,10 +80,10 @@ export default function ProductsIndex() {
               <div style={{ display:'flex', gap:8 }}>
                 <input inputMode="numeric" placeholder="Min" value={minPrice}
                   onChange={(e)=>setMinPrice(e.target.value)}
-                  style={{ flex:1, padding:'8px 10px', border:'1px solid #ddd', borderRadius:8 }}/>
+                  style={{ flex:1, padding:'8px 10px', border:'1px solid var(--border)', borderRadius:8 }}/>
                 <input inputMode="numeric" placeholder="Max" value={maxPrice}
                   onChange={(e)=>setMaxPrice(e.target.value)}
-                  style={{ flex:1, padding:'8px 10px', border:'1px solid #ddd', borderRadius:8 }}/>
+                  style={{ flex:1, padding:'8px 10px', border:'1px solid var(--border)', borderRadius:8 }}/>
               </div>
             </div>
 
@@ -124,12 +92,12 @@ export default function ProductsIndex() {
                 <div style={{ fontWeight:600, marginBottom:6 }}>Color</div>
                 <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
                   <button type="button" onClick={()=>setColorFilter('')}
-                    style={{ padding:'6px 10px', border:'1px solid #ddd', borderRadius:999, background: colorFilter ? '#fff' : '#111', color: colorFilter ? '#111' : '#fff' }}>
+                    style={{ padding:'6px 10px', border:'1px solid var(--border)', borderRadius:999, background: colorFilter ? 'var(--card)' : '#111', color: colorFilter ? 'var(--text)' : '#fff' }}>
                     Any
                   </button>
                   {allColors.map((c)=>(
                     <button key={String(c)} type="button" onClick={()=>setColorFilter(String(c))}
-                      style={{ padding:'6px 10px', border:'1px solid #ddd', borderRadius:999, background: (String(c)===colorFilter)?'#111':'#fff', color:(String(c)===colorFilter)?'#fff':'#111' }}>
+                      style={{ padding:'6px 10px', border:'1px solid var(--border)', borderRadius:999, background: (String(c)===colorFilter)?'#111':'var(--card)', color:(String(c)===colorFilter)?'#fff':'var(--text)' }}>
                       {String(c)}
                     </button>
                   ))}
@@ -142,7 +110,7 @@ export default function ProductsIndex() {
               <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
                 {['', ...ALL_SIZES].map((s)=>(
                   <button key={s || 'any'} type="button" onClick={()=>setSizeFilter(s)}
-                    style={{ padding:'6px 10px', border:'1px solid #ddd', borderRadius:999, background: (s===sizeFilter)?'#111':'#fff', color:(s===sizeFilter)?'#fff':'#111' }}>
+                    style={{ padding:'6px 10px', border:'1px solid var(--border)', borderRadius:999, background: (s===sizeFilter)?'#111':'var(--card)', color:(s===sizeFilter)?'#fff':'var(--text)' }}>
                     {s || 'Any'}
                   </button>
                 ))}
@@ -150,7 +118,7 @@ export default function ProductsIndex() {
             </div>
 
             <button type="button" onClick={()=>{ setQ(''); setMinPrice(''); setMaxPrice(''); setColorFilter(''); setSizeFilter(''); }}
-              style={{ padding:'10px 12px', border:'1px solid #ddd', borderRadius:8, background:'#fafafa' }}>
+              style={{ padding:'10px 12px', border:'1px solid var(--border)', borderRadius:8, background:'var(--card)' }}>
               Reset
             </button>
           </form>
@@ -164,12 +132,13 @@ export default function ProductsIndex() {
               const slug = getSlug(p);
               const price = getPrice(p);
               const colors = getColors(p);
-              const color = selected[slug]; // may be undefined
-              const img = getImageForColor(p, color) ?? getImage(p);
+              // If only one color, use it by default (no click needed)
+              const chosenColor = colors.length === 1 ? colors[0] : (selected[slug]);
+              const img = getImageForColor(p, chosenColor) ?? getImage(p);
 
               return (
-                <div key={slug} style={{ border:'1px solid #eee', borderRadius:12, overflow:'hidden', background:'#fff', display:'grid' }}>
-                  <Link href={`/products/${slug}`} style={{ color:'#111', textDecoration:'none' }}>
+                <div key={slug} style={{ border:'1px solid var(--border)', borderRadius:12, overflow:'hidden', background:'var(--card)', display:'grid' }}>
+                  <Link href={`/products/${slug}`} style={{ color:'var(--text)', textDecoration:'none' }}>
                     <div style={{ aspectRatio:'1/1', background:'#f4f4f5', display:'grid', placeItems:'center' }}>
                       {img ? <img src={img} alt={name} style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : 'IMG'}
                     </div>
@@ -177,12 +146,12 @@ export default function ProductsIndex() {
 
                   <div style={{ padding:12, display:'grid', gap:10 }}>
                     <div style={{ fontWeight:700, fontSize:14, lineHeight:1.2 }}>{name}</div>
-                    <div style={{ fontSize:13, color:'#666' }}>${price.toFixed(2)}</div>
+                    <div style={{ fontSize:13, color:'var(--muted)' }}>${price.toFixed(2)}</div>
 
                     {!!colors.length && (
                       <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
-                        {colors.map((c) => {
-                          const isSel = (selected[slug] ?? '').toLowerCase() === String(c).toLowerCase();
+                        {colors.map((c: string) => {
+                          const isSel = (chosenColor ?? '').toLowerCase() === String(c).toLowerCase();
                           return (
                             <button
                               key={c}
@@ -192,7 +161,7 @@ export default function ProductsIndex() {
                               style={{
                                 width:22, height:22, borderRadius:'50%',
                                 border: isSel ? '2px solid #111' : '1px solid #ccc',
-                                background: colorToCss(c),
+                                background: String(c),
                                 cursor:'pointer'
                               }}
                             />
@@ -216,7 +185,7 @@ export default function ProductsIndex() {
                           addItem({ slug, title: name, price, qty: 1, size: null, image: img });
                           window.location.href = '/cart';
                         }}
-                        style={{ flex:1, border:'1px solid #111', background:'#fff', color:'#111', borderRadius:8, padding:'10px 12px', cursor:'pointer' }}
+                        style={{ flex:1, border:'1px solid #111', background:'var(--card)', color:'var(--text)', borderRadius:8, padding:'10px 12px', cursor:'pointer' }}
                       >
                         Buy Now
                       </button>
@@ -228,24 +197,6 @@ export default function ProductsIndex() {
           </div>
         </section>
       </div>
-    <RecentlyViewed />
-      <QuickView />
     </main>
   );
-}
-
-function colorToCss(c: any): string {
-  if (!c) return '#eee';
-  const s = String(c).toLowerCase();
-  const map: Record<string, string> = {
-    black:'#111', white:'#fff', offwhite:'#f7f7f7', ivory:'#f5f5ed', cream:'#f5f1e6',
-    gray:'#888', grey:'#888', silver:'#bbb', charcoal:'#333',
-    beige:'#d8c8a8', tan:'#d2b48c', brown:'#7b5e57',
-    red:'#d33', maroon:'#800000', burgundy:'#800020',
-    blue:'#005fdd', navy:'#001f3f', sky:'#87ceeb', teal:'#008080',
-    green:'#2a8f2a', olive:'#556b2f',
-    yellow:'#ffd400', gold:'#d4af37', orange:'#ff7f00',
-    purple:'#6a0dad', lavender:'#b57edc', pink:'#ff69b4',
-  };
-  return map[s] ?? s;
 }

@@ -10,7 +10,9 @@ export default function ProductCard({ product }: { product: any }) {
   const name = getName(product);
   const price = getPrice(product);
   const slug = getSlug(product);
-  const img = getImage(product);
+  const colors = getColors(product);
+  const chosenColor = colors.length === 1 ? colors[0] : undefined;
+  const img = getImageForColor(product, chosenColor) ?? getImage(product);
   const inv = getInventory(product);
   const low = inv <= 5;
 
@@ -43,11 +45,11 @@ export default function ProductCard({ product }: { product: any }) {
           </button>
           <button
             onClick={()=>{
-              window.dispatchEvent(new CustomEvent('quickview:open', { detail: { slug } }));
+              window.location.href='/products/'+slug;
             }}
             style={{ flex:1, border:'1px solid var(--border)', background:'var(--card)', color:'var(--text)', borderRadius:8, padding:'10px 12px', cursor:'pointer' }}
           >
-            Quick View
+            View
           </button>
         </div>
       </div>
