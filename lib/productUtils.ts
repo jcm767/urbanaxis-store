@@ -100,3 +100,13 @@ export function getBySlug(slug: string): AnyProduct | undefined {
   const list = getAllProducts();
   return list.find((p) => getSlug(p) === slug);
 }
+
+
+export function getInventory(p: AnyProduct): number {
+  const inv = Number(p?.inventory ?? p?.stock ?? 9999);
+  return Number.isFinite(inv) ? inv : 9999;
+}
+
+export function getSizeGuide(p: AnyProduct): string | null {
+  return p?.sizeGuide ?? null; // can store HTML/markdown string per product if desired
+}

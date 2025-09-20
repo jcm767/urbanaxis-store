@@ -3,6 +3,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import TrustBadges from '@/components/TrustBadges';
 import {
   CartItem,
   getCart,
@@ -226,6 +227,7 @@ export default function CartPage() {
             Clear
           </button>
         </div>
+        <TrustBadges />
       </div>
     </main>
   );

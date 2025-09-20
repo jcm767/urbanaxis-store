@@ -4,6 +4,8 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { addItem } from '@/lib/cart';
+import QuickView from '@/components/QuickView';
+import RecentlyViewed from '@/components/RecentlyViewed';
 import {
   getAllProducts, getName, getPrice, getSlug, getImageForColor,
   getImage, getDescription, getCategory, getTags, getGender, getColors
@@ -226,6 +228,8 @@ export default function ProductsIndex() {
           </div>
         </section>
       </div>
+    <RecentlyViewed />
+      <QuickView />
     </main>
   );
 }
