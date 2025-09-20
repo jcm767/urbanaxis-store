@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { addItem } from '@/lib/cart';
+import { getMergedProductsClient } from '@/lib/catalog';
 import {
   getAllProducts, getName, getPrice, getSlug, getImageForColor,
   getImage, getDescription, getCanonicalCategory, getTags, getGender, getColors, getSearchKeywords
@@ -12,7 +13,9 @@ import {
 const ALL_SIZES = ['XS','S','M','L','XL','XXL'];
 
 export default function ProductsIndex() {
-  const all = getAllProducts();
+  const [all,setAll] = useState<any[]>(getAllProducts());
+  // Load dynamic products and merge
+  useMemo(()=>{ (async()=>{ const m = await getMergedProductsClient(); setAll(m); })(); },[]);
   const [q, setQ] = useState('');
   const [selected, setSelected] = useState<Record<string, string | undefined>>({}); // slug -> color
 

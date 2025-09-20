@@ -27,6 +27,7 @@ export default function Header() {
           <Link href="/men/tops">Men ▾</Link>
           <Link href="/women/tops">Women ▾</Link>
           <Link href="/products">All</Link>
+          <a href="/admin/add-product" style={{textDecoration:'none',color:'var(--text)'}}>Add Product</a>
         </nav>
         <div style={{ flex:1 }} />
         <SearchBar />
