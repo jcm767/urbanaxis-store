@@ -1,67 +1,180 @@
-// components/QuickView.tsx
 'use client';
-import { useEffect, useState } from 'react';
+
+import { useEffect, useMemo, useState } from 'react';
 import { addItem } from '@/lib/cart';
-import { getBySlug, getImageForColor, getImage, getColors, getName, getPrice } from '@/lib/productUtils';
+import {
+  getBySlug,
+  getImageForColor,
+  getImage,
+  getColors,
+  getName,
+  getPrice,
+} from '@/lib/productUtils';
 
-export default function QuickView(){
-  const [slug,setSlug]=useState<string|undefined>();
-  const [open,setOpen]=useState(false);
-  const [color,setColor]=useState<string|''>('');
-  const [qty,setQty]=useState(1);
+type Prod = Record<string, any>;
 
-  useEffect(()=>{
-    const on=(e: any)=>{ setSlug(e.detail?.slug); setOpen(true); setColor(''); setQty(1); };
-    const off=()=>setOpen(false);
-    window.addEventListener('quickview:open', on as any);
-    window.addEventListener('quickview:close', off);
-    return ()=>{ window.removeEventListener('quickview:open', on as any); window.removeEventListener('quickview:close', off); };
-  },[]);
+export default function QuickView() {
+  // Read ?qv=<slug> from the URL on the client; if absent, render nothing.
+  const [slug, setSlug] = useState<string | undefined>(undefined);
+  const [open, setOpen] = useState(false);
+  const [product, setProduct] = useState<Prod | null>(null);
+  const [color, setColor] = useState<string | undefined>(undefined);
 
-  if(!open || !slug) return null;
-  const p = getBySlug(slug);
-  if(!p) return null;
+  // get slug once on mount (client-only)
+  useEffect(() => {
+    try {
+      const u = new URL(window.location.href);
+      const s = u.searchParams.get('qv') ?? undefined;
+      if (s) {
+        setSlug(s);
+        setOpen(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
 
-  const name=getName(p); const price=getPrice(p);
-  const colors=getColors(p);
-  const img=getImageForColor(p, color)||getImage(p);
+  // fetch product when slug is present
+  useEffect(() => {
+    if (!slug) return;
+    let mounted = true;
+    (async () => {
+      const p = await getBySlug(slug);
+      if (mounted) setProduct(p ?? null);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [slug]);
+
+  const colors = useMemo(() => (product ? getColors(product) : []), [product]);
+  const img = useMemo(() => {
+    if (!product) return undefined;
+    if (color) return getImageForColor(product, color);
+    return getImage(product);
+  }, [product, color]);
+
+  if (!open || !product) return null;
+
+  const name = getName(product);
+  const priceStr = getPrice(product?.price); // <-- formatted string (no .toFixed())
 
   return (
-    <>
-      <div onClick={()=>setOpen(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.45)',zIndex:98}}/>
-      <div style={{position:'fixed',zIndex:99,top:'10%',left:'50%',transform:'translateX(-50%)',width:'min(900px,95vw)',background:'var(--bg)',border:'1px solid var(--border)',borderRadius:12,overflow:'hidden'}}>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
-          <div style={{background:'#f4f4f5',minHeight:320,display:'grid',placeItems:'center'}}>
-            {img ? <img src={img} alt={name} style={{width:'100%',height:'100%',objectFit:'cover'}}/> : 'IMG'}
+    <div
+      role="dialog"
+      aria-modal="true"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0,0,0,0.35)',
+        display: 'grid',
+        placeItems: 'center',
+        zIndex: 50,
+      }}
+      onClick={() => setOpen(false)}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: 'min(92vw, 720px)',
+          background: 'var(--card, #fff)',
+          color: 'var(--foreground, #111827)',
+          borderRadius: 12,
+          border: '1px solid var(--border, #e5e7eb)',
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', padding: 12 }}>
+          <div style={{ fontWeight: 700 }}>{name}</div>
+          <button
+            onClick={() => setOpen(false)}
+            style={{
+              border: '1px solid var(--border, #e5e7eb)',
+              background: 'var(--card, #fff)',
+              borderRadius: 8,
+              padding: '6px 10px',
+              cursor: 'pointer',
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, padding: 16 }}>
+          <div>
+            {img ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                alt={name}
+                src={img}
+                style={{ width: '100%', height: 360, objectFit: 'cover', borderRadius: 8 }}
+              />
+            ) : (
+              <div style={{ width: '100%', height: 360, background: '#f3f4f6', borderRadius: 8 }} />
+            )}
           </div>
-          <div style={{padding:16}}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-              <h3 style={{margin:0}}>{name}</h3>
-              <button onClick={()=>setOpen(false)} style={{border:'1px solid var(--border)',background:'var(--card)',borderRadius:8,padding:'6px 10px'}}>✕</button>
-            </div>
-            <div style={{marginTop:6,fontWeight:700}}>${price.toFixed(2)}</div>
+
+          <div style={{ display: 'grid', gap: 10 }}>
+            <div style={{ marginTop: 6, fontWeight: 700 }}>{priceStr}</div>
+
             {!!colors.length && (
-              <div style={{marginTop:10,display:'flex',gap:8,flexWrap:'wrap'}}>
-                {colors.map((c:string)=>(
-                  <button key={c} onClick={()=>setColor(c)} title={String(c)}
-                    style={{width:22,height:22,borderRadius:'50%',border:(String(c)===color)?'2px solid #111':'1px solid #ccc',background:String(c)}}
-                  />
+              <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {colors.map((c: string) => (
+                  <button
+                    key={c}
+                    onClick={() => setColor(c)}
+                    style={{
+                      border: '1px solid #e5e7eb',
+                      background: color === c ? '#111827' : '#fff',
+                      color: color === c ? '#fff' : '#111827',
+                      borderRadius: 999,
+                      padding: '6px 10px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {c}
+                  </button>
                 ))}
               </div>
             )}
-            <div style={{marginTop:12}}>
-              <label>Qty</label>
-              <input type="number" min={1} max={99} value={qty} onChange={e=>setQty(Math.max(1,Math.min(99,Number(e.target.value)||1)))} style={{display:'block',marginTop:6,width:90,padding:'8px 10px',border:'1px solid var(--border)',borderRadius:8}}/>
-            </div>
-            <div style={{display:'flex',gap:8,marginTop:16,flexWrap:'wrap'}}>
-              <button onClick={()=>{ addItem({ slug, title:name, price, qty, size:null, color: color || null, image: img }); window.dispatchEvent(new Event('cart:update')); }}
-                style={{border:'1px solid #111',background:'#111',color:'#fff',borderRadius:10,padding:'10px 14px'}}>Add to Cart</button>
-              <button onClick={()=>{ addItem({ slug, title:name, price, qty, size:null, color: color || null, image: img }); window.location.href='/cart'; }}
-                style={{border:'1px solid #111',background:'#fff',color:'#111',borderRadius:10,padding:'10px 14px'}}>Buy Now</button>
-            </div>
+
+            <button
+              onClick={() =>
+                addItem({
+                  id: String(product?.id ?? slug ?? name),
+                  title: name,
+                  price: Number(String(product?.price).replace(/[^\d.]/g, '')) || 0,
+                  image: img,
+                  // keep original product for downstream use
+                  metadata: { slug, color, source: product?.__source },
+                })
+              }
+              style={{
+                marginTop: 12,
+                background: '#111827',
+                color: '#fff',
+                padding: '10px 14px',
+                borderRadius: 8,
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              Add to Cart
+            </button>
+
+            {(product as any)?.url ? (
+              <a
+                href={(product as any).url}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: '#2563eb', textDecoration: 'underline', marginTop: 6 }}
+              >
+                View Source Product
+              </a>
+            ) : null}
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
