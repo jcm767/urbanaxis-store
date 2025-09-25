@@ -59,16 +59,13 @@ export async function loadAllProducts(): Promise<UnifiedProduct[]> {
     curated = arr.map((p: any) => ({
       ...p,
       __source: 'curated' as const,
-      // ensure images array exists
       images: Array.isArray(p.images) ? p.images : (p.image ? [p.image] : []),
     }));
   } catch {
-    // no curated overlay present — that's fine
     curated = [];
   }
 
-  // 3) Merge: curated first, then legacy.
-  // If an ID or URL matches, keep curated (assume curated takes precedence).
+  // 3) Merge: curated first, then legacy (dedupe by id/url/title)
   const seen = new Set<string>();
   const merged: UnifiedProduct[] = [];
 

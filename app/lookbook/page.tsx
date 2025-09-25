@@ -1,5 +1,4 @@
 // app/lookbook/page.tsx
-// A lightweight visual grid; compiles with new utils.
 import { getAllProducts, getName, getImage, getSlug } from '@/lib/productUtils';
 
 export default async function LookbookPage() {
@@ -8,7 +7,6 @@ export default async function LookbookPage() {
   return (
     <main style={{ padding: 24 }}>
       <h1 style={{ marginBottom: 16 }}>Lookbook</h1>
-
       {items.length === 0 ? (
         <p>No products to showcase yet.</p>
       ) : (
@@ -36,12 +34,7 @@ export default async function LookbookPage() {
               >
                 {img ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    alt={getName(p)}
-                    src={img}
-                    style={{ width: '100%', height: 280, objectFit: 'cover' }}
-                    loading="lazy"
-                  />
+                  <img alt={getName(p)} src={img} style={{ width: '100%', height: 280, objectFit: 'cover' }} loading="lazy" />
                 ) : (
                   <div style={{ width: '100%', height: 280, background: '#f3f4f6' }} />
                 )}

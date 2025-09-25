@@ -1,5 +1,4 @@
 // app/products/page.tsx
-// Simple "All Products" grid that compiles with our unified helpers.
 import Link from 'next/link';
 import { getAllProducts, getName, getPrice, getSlug, getImage } from '@/lib/productUtils';
 
@@ -9,7 +8,6 @@ export default async function ProductsPage() {
   return (
     <main style={{ padding: 24 }}>
       <h1 style={{ marginBottom: 16 }}>All Products</h1>
-
       {items.length === 0 ? (
         <p>No products yet.</p>
       ) : (
@@ -39,12 +37,7 @@ export default async function ProductsPage() {
               >
                 {img ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    alt={getName(p)}
-                    src={img}
-                    style={{ width: '100%', height: 220, objectFit: 'cover' }}
-                    loading="lazy"
-                  />
+                  <img alt={getName(p)} src={img} style={{ width: '100%', height: 220, objectFit: 'cover' }} loading="lazy" />
                 ) : (
                   <div style={{ width: '100%', height: 220, background: '#f3f4f6' }} />
                 )}

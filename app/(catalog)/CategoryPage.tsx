@@ -27,28 +27,31 @@ export default async function CategoryPage({ gender, category, title }: Props) {
   }));
 
   const cat = category ? normalizeCategory(category) : undefined;
-  const items = filterProducts(all, { gender, category: cat });
+  const items = filterProducts(all as any, { gender, category: cat });
 
   return (
-    <main style={{ padding: 24 }}>
-      <h1>{title ?? `${gender.toUpperCase()}${cat ? ` • ${cat.toUpperCase()}` : ''}`}</h1>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-          gap: 16,
-        }}
-      >
-        {items.map((p: any, i: number) => (
-          <ProductCard
-            key={p.id ?? p.slug ?? p.url ?? i}
-            product={{
-              ...p,
-              image: p.image ?? productPrimaryImage(p),
-            }}
-          />
-        ))}
-      </div>
+    <main style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
+      <h1 style={{ marginBottom: 16 }}>
+        {title ?? `${gender.toUpperCase()}${cat ? ` • ${cat.toUpperCase()}` : ''}`}
+      </h1>
+      {items.length === 0 ? (
+        <p>No products found for this category yet. Check back soon.</p>
+      ) : (
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+            gap: 16,
+          }}
+        >
+          {items.map((p: any, i: number) => (
+            <ProductCard
+              key={p.id ?? p.slug ?? p.url ?? i}
+              product={{ ...p, image: p.image ?? productPrimaryImage(p) }}
+            />
+          ))}
+        </div>
+      )}
     </main>
   );
 }

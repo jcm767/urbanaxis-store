@@ -2,6 +2,7 @@
 import { loadAllProducts } from '@/lib/loadProducts';
 
 type AnyProduct = Record<string, any>;
+export type { AnyProduct };
 
 export async function getAllProducts(): Promise<AnyProduct[]> {
   return await loadAllProducts();
