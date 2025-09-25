@@ -1,29 +1,76 @@
-// components/RecentlyViewed.tsx
 'use client';
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { getRecent } from '@/lib/recent';
-import { getBySlug, getImage, getName, getPrice } from '@/lib/productUtils';
 
-export default function RecentlyViewed(){
-  const [slugs,setSlugs]=useState<string[]>([]);
-  useEffect(()=>{ const fn=()=>setSlugs(getRecent()); fn(); window.addEventListener('recent:update',fn); return()=>window.removeEventListener('recent:update',fn); },[]);
-  const items = slugs.map(s=>getBySlug(s)).filter(Boolean);
-  if(!items.length) return null;
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { getName, getSlug, getImage, getPrice } from '@/lib/productUtils';
+
+type AnyRecord = Record<string, any>;
+
+export default function RecentlyViewed(props: { items?: AnyRecord[] }) {
+  const [items, setItems] = useState<AnyRecord[]>(props.items ?? []);
+
+  // Hydrate from localStorage if no props provided
+  useEffect(() => {
+    if (items.length) return;
+    try {
+      const raw =
+        typeof window !== 'undefined'
+          ? window.localStorage.getItem('recentlyViewed') ??
+            window.localStorage.getItem('ua_recently_viewed')
+          : null;
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) setItems(parsed as AnyRecord[]);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, [items.length]);
+
+  if (!items.length) return null;
+
   return (
-    <section style={{marginTop:24}}>
-      <h3>Recently Viewed</h3>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))',gap:12}}>
-        {items.map((p:any)=>{
-          const name=getName(p); const price=getPrice(p);
+    <section style={{ padding: 24 }}>
+      <h2 style={{ margin: '0 0 12px 0' }}>Recently Viewed</h2>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+          gap: 12,
+        }}
+      >
+        {items.map((p: AnyRecord, i: number) => {
+          const name = getName(p);
+          const slug = getSlug(p) || `recent-${i}`;
+          const img = getImage(p);
+          const priceStr = getPrice(p?.price); // <-- formatted string (no .toFixed)
+
           return (
-            <Link key={p.slug||name} href={`/products/${p.slug||name}`} style={{textDecoration:'none',color:'var(--text)',border:'1px solid var(--border)',borderRadius:12,overflow:'hidden',background:'var(--card)'}}>
-              <div style={{aspectRatio:'1/1',background:'#f4f4f5',display:'grid',placeItems:'center'}}>
-                {getImage(p)?<img src={getImage(p)!} alt={name} style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'IMG'}
-              </div>
-              <div style={{padding:10}}>
-                <div style={{fontWeight:600,fontSize:14}}>{name}</div>
-                <div style={{fontSize:13,opacity:.75}}>${price.toFixed(2)}</div>
+            <Link
+              key={slug}
+              href={`/products/${encodeURIComponent(slug)}`}
+              style={{
+                border: '1px solid #e5e7eb',
+                borderRadius: 12,
+                overflow: 'hidden',
+                textDecoration: 'none',
+                color: 'inherit',
+              }}
+            >
+              {img ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  alt={name}
+                  src={img}
+                  style={{ width: '100%', height: 160, objectFit: 'cover' }}
+                  loading="lazy"
+                />
+              ) : (
+                <div style={{ width: '100%', height: 160, background: '#f3f4f6' }} />
+              )}
+              <div style={{ padding: 10 }}>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>{name}</div>
+                <div style={{ fontSize: 13, opacity: 0.75 }}>{priceStr}</div>
               </div>
             </Link>
           );
