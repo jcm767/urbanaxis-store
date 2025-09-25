@@ -1,77 +1,55 @@
 // app/lookbook/page.tsx
-// Visual-first grid that uses primary images from the unified loader.
-// Eliminates missing imports from productUtils.
-
-import Image from "next/image";
-import Link from "next/link";
-import { loadAllProducts, primaryImage } from "@/lib/loadProducts";
-
-export const dynamic = "force-static";
+// A lightweight visual grid; compiles with new utils.
+import { getAllProducts, getName, getImage, getSlug } from '@/lib/productUtils';
 
 export default async function LookbookPage() {
-  const all = await loadAllProducts();
-  const showcase = all.slice(0, 24); // a lightweight selection
+  const items = await getAllProducts();
 
   return (
-    <main style={{ padding: 24, maxWidth: 1400, margin: "0 auto" }}>
-      <header style={{ marginBottom: 16 }}>
-        <h1 style={{ margin: 0 }}>Lookbook</h1>
-        <p style={{ opacity: 0.8 }}>
-          A visual pass through curated and trending pieces.
-        </p>
-      </header>
+    <main style={{ padding: 24 }}>
+      <h1 style={{ marginBottom: 16 }}>Lookbook</h1>
 
-      {showcase.length === 0 ? (
-        <p>Nothing to show yet.</p>
+      {items.length === 0 ? (
+        <p>No products to showcase yet.</p>
       ) : (
-        <section
+        <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
             gap: 16,
           }}
         >
-          {showcase.map((p, i) => {
-            const img = primaryImage(p);
-            const title = p.title ?? p.name ?? "Untitled";
+          {items.map((p: any, i: number) => {
+            const img = getImage(p);
+            const slug = getSlug(p) || `item-${i}`;
             return (
-              <Link
-                key={p.slug ?? p.id ?? i}
-                href={`/products/${p.slug}`}
-                style={{ textDecoration: "none", color: "inherit" }}
+              <a
+                key={p.id ?? slug}
+                href={`/products/${encodeURIComponent(slug)}`}
+                style={{
+                  display: 'block',
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  border: '1px solid #e5e7eb',
+                  textDecoration: 'none',
+                }}
               >
-                <div
-                  style={{
-                    borderRadius: 14,
-                    overflow: "hidden",
-                    border: "1px solid #eee",
-                    background: "#fff",
-                  }}
-                >
-                  <div style={{ aspectRatio: "1/1", position: "relative" }}>
-                    {img ? (
-                      <Image
-                        src={img}
-                        alt={title}
-                        fill
-                        style={{ objectFit: "cover" }}
-                        sizes="(max-width: 768px) 50vw, 25vw"
-                        priority={i < 6}
-                      />
-                    ) : (
-                      <div style={{ width: "100%", height: "100%", background: "#f2f2f2" }} />
-                    )}
-                  </div>
-                  <div style={{ padding: 12 }}>
-                    <div style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.3 }}>
-                      {title}
-                    </div>
-                  </div>
-                </div>
-              </Link>
+                {img ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    alt={getName(p)}
+                    src={img}
+                    style={{ width: '100%', height: 280, objectFit: 'cover' }}
+                    loading="lazy"
+                  />
+                ) : (
+                  <div style={{ width: '100%', height: 280, background: '#f3f4f6' }} />
+                )}
+                <div style={{ padding: 12, color: '#111827' }}>{getName(p)}</div>
+              </a>
             );
           })}
-        </section>
+        </div>
       )}
     </main>
   );

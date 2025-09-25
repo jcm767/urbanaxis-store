@@ -3,18 +3,17 @@
 const nextConfig = {
   images: {
     remotePatterns: [
-      // AliExpress & AliCDN (common product image hosts)
-      { protocol: "https", hostname: "ae01.alicdn.com" },
-      { protocol: "https", hostname: "img.alicdn.com" },
-      { protocol: "https", hostname: "aliexpress.ru" },
-      { protocol: "https", hostname: "www.aliexpress.com" },
-      { protocol: "https", hostname: "*.aliexpress-media.com" },
-      // Add your own CDN(s) here as needed
+      { protocol: 'https', hostname: '**.alicdn.com' },
+      { protocol: 'https', hostname: 'ae01.alicdn.com' },
+      { protocol: 'https', hostname: 'i.alicdn.com' },
+      { protocol: 'https', hostname: 'img.alicdn.com' },
+      { protocol: 'https', hostname: 's.alicdn.com' },
+      { protocol: 'https', hostname: '**.vercel.app' },
+      { protocol: 'https', hostname: 'images.unsplash.com' },
+      { protocol: 'https', hostname: 'cdn.shopify.com' },
     ],
   },
-  experimental: {
-    typedRoutes: true,
-  },
+  reactStrictMode: true,
 };
 
 module.exports = nextConfig;

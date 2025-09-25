@@ -1,83 +1,77 @@
 // lib/catalog.ts
-// Helpers for gender/category typing + filtering
+// Loosely-typed catalog helpers that interop with ANY product shape.
 
-export type Gender = "men" | "women";
+export type Gender = "men" | "women" | "unisex";
 export type Category = "tops" | "bottoms" | "jackets" | "accessories";
 
-const TOPS = ["tee","t shirt","t-shirt","shirt","button","polo","sweater","hoodie","tank","top","crewneck"];
-const BOTTOMS = ["jeans","denim","pants","trouser","trousers","shorts","cargo","jogger"];
-const JACKETS = ["jacket","coat","bomber","puffer","parka","trench","windbreaker","blazer","shell"];
-const ACCESSORIES = ["hat","cap","beanie","belt","bag","crossbody","necklace","chain","bracelet","ring","socks","wallet","glasses","sunglasses","scarf"];
-
-export function normalizeCategory(input?: string | null): Category | undefined {
+export function normalizeCategory(input: unknown): Category | undefined {
   if (!input) return undefined;
-  const v = String(input).toLowerCase();
-  if (["top","tops"].includes(v)) return "tops";
-  if (["bottom","bottoms","pants","jeans","shorts"].includes(v)) return "bottoms";
-  if (["jacket","jackets","outerwear","coat","coats","bomber","puffer","parka"].includes(v)) return "jackets";
-  if (["accessory","accessories","acc"].includes(v)) return "accessories";
+  const s = String(input).toLowerCase().trim();
+
+  if (
+    s === "tops" ||
+    s.includes("tee") ||
+    s.includes("t-shirt") ||
+    s.includes("shirt") ||
+    s.includes("polo") ||
+    s.includes("sweater") ||
+    s.includes("hoodie") ||
+    s.includes("tank") ||
+    s === "top"
+  ) return "tops";
+
+  if (
+    s === "bottoms" ||
+    s.includes("jeans") ||
+    s.includes("denim") ||
+    s.includes("pants") ||
+    s.includes("trouser") ||
+    s.includes("shorts") ||
+    s === "skirt"
+  ) return "bottoms";
+
+  if (s === "jackets" || s.includes("jacket") || s.includes("coat") || s.includes("puffer"))
+    return "jackets";
+
+  if (
+    s === "accessories" ||
+    s.includes("accessory") ||
+    s.includes("belt") ||
+    s.includes("bag") ||
+    s.includes("cap") ||
+    s.includes("hat")
+  ) return "accessories";
+
   return undefined;
 }
 
-export function isValidGender(x: any): x is Gender { return x === "men" || x === "women"; }
-export function isValidCategory(x: any): x is Category {
-  return x === "tops" || x === "bottoms" || x === "jackets" || x === "accessories";
-}
-
-function hasAny(text: string, words: string[]) {
-  const t = text.toLowerCase();
-  return words.some(w => t.includes(w));
-}
-function inferCategoryFromText(text: string): Category | undefined {
-  if (hasAny(text, TOPS)) return "tops";
-  if (hasAny(text, BOTTOMS)) return "bottoms";
-  if (hasAny(text, JACKETS)) return "jackets";
-  if (hasAny(text, ACCESSORIES)) return "accessories";
-  return undefined;
-}
-function inferGenderFromText(text: string): Gender | "unisex" | undefined {
-  const t = text.toLowerCase();
-  const menHits = /(men|mens|men's|male|guys|man)\b/.test(t);
-  const womenHits = /(women|womens|women's|female|ladies|woman)\b/.test(t);
-  if (menHits && !womenHits) return "men";
-  if (womenHits && !menHits) return "women";
-  if (menHits && womenHits) return "unisex";
+export function normalizeGender(input: unknown): Gender | undefined {
+  if (!input) return undefined;
+  const s = String(input).toLowerCase().trim();
+  if (s === "men" || s === "male" || s === "m") return "men";
+  if (s === "women" || s === "female" || s === "w") return "women";
+  if (s === "unisex" || s === "all") return "unisex";
   return undefined;
 }
 
-type AnyProduct = {
-  id?: string|number;
-  title?: string;
-  name?: string;
-  price?: number|string;
-  images?: string[];
-  image?: string;
-  thumbnail?: string;
-  url?: string;
-  href?: string;
-  permalink?: string;
-  tags?: string[];
-  gender?: Gender | "unisex";
-  category?: Category | string;
-};
+type FilterOpts = { gender?: Gender; category?: Category };
 
-export function matchProduct(p: AnyProduct, gender: Gender, category?: Category): boolean {
-  const title = (p.title ?? p.name ?? "").toString();
-  const tags = (Array.isArray(p.tags) ? p.tags : []).join(" ");
-  const blob = `${title} ${tags}`.trim();
+/**
+ * filterProducts
+ * Accepts ANY array shape. We only read `.gender` and `.category`.
+ */
+export function filterProducts<T extends Record<string, any>>(
+  list: ReadonlyArray<T>,
+  opts: FilterOpts
+): T[] {
+  const wantGender = opts.gender ? normalizeGender(opts.gender) : undefined;
+  const wantCat = opts.category ? normalizeCategory(opts.category) : undefined;
 
-  // Gender logic
-  const g = (p.gender as Gender | "unisex") ?? inferGenderFromText(blob) ?? "unisex";
-  const genderOk = g === "unisex" || g === gender;
-
-  // Category logic
-  const explicitCat = normalizeCategory((p.category as string) ?? undefined);
-  const inferredCat = explicitCat ?? inferCategoryFromText(blob);
-  const catOk = category ? inferredCat === category : true;
-
-  return genderOk && catOk;
-}
-
-export function filterProducts(all: AnyProduct[], gender: Gender, category?: Category): AnyProduct[] {
-  return (all ?? []).filter(p => matchProduct(p, gender, category));
+  return list.filter((item) => {
+    const gotGender = normalizeGender(item?.gender);
+    const gotCat = normalizeCategory(item?.category);
+    const genderOk = wantGender ? gotGender === wantGender : true;
+    const catOk = wantCat ? gotCat === wantCat : true;
+    return genderOk && catOk;
+  });
 }

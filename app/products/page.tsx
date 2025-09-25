@@ -1,36 +1,61 @@
 // app/products/page.tsx
-// Simple unified catalog index using the merged loader + ProductCard.
-// Removes old imports that caused build errors.
+// Simple "All Products" grid that compiles with our unified helpers.
+import Link from 'next/link';
+import { getAllProducts, getName, getPrice, getSlug, getImage } from '@/lib/productUtils';
 
-import ProductCard from "@/components/ProductCard";
-import { loadAllProducts } from "@/lib/loadProducts";
-
-export const dynamic = "force-static";
-
-export default async function AllProductsPage() {
-  const all = await loadAllProducts(); // curated first, then legacy
+export default async function ProductsPage() {
+  const items = await getAllProducts();
 
   return (
-    <main style={{ padding: 24, maxWidth: 1200, margin: "0 auto" }}>
-      <header style={{ marginBottom: 16 }}>
-        <h1 style={{ margin: 0 }}>All Products</h1>
-        <p style={{ opacity: 0.8 }}>Curated + legacy feed combined.</p>
-      </header>
+    <main style={{ padding: 24 }}>
+      <h1 style={{ marginBottom: 16 }}>All Products</h1>
 
-      {all.length === 0 ? (
-        <p>No products available yet.</p>
+      {items.length === 0 ? (
+        <p>No products yet.</p>
       ) : (
-        <section
+        <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
             gap: 16,
           }}
         >
-          {all.map((p, idx) => (
-            <ProductCard key={`${p.slug ?? p.id ?? idx}`} product={p} />
-          ))}
-        </section>
+          {items.map((p: any, i: number) => {
+            const img = getImage(p);
+            const slug = getSlug(p) || `item-${i}`;
+            return (
+              <Link
+                key={p.id ?? slug}
+                href={`/products/${encodeURIComponent(slug)}`}
+                style={{
+                  textDecoration: 'none',
+                  border: '1px solid #e5e7eb',
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  display: 'grid',
+                  gap: 8,
+                  paddingBottom: 12,
+                }}
+              >
+                {img ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    alt={getName(p)}
+                    src={img}
+                    style={{ width: '100%', height: 220, objectFit: 'cover' }}
+                    loading="lazy"
+                  />
+                ) : (
+                  <div style={{ width: '100%', height: 220, background: '#f3f4f6' }} />
+                )}
+                <div style={{ padding: '0 12px' }}>
+                  <div style={{ color: '#111827', marginBottom: 4 }}>{getName(p)}</div>
+                  <div style={{ color: '#6b7280', fontSize: 14 }}>{getPrice(p?.price)}</div>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
       )}
     </main>
   );

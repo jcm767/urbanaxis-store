@@ -1,22 +1,21 @@
 // app/layout.tsx
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
 export const metadata = {
-  title: "Urban Axis",
-  description: "Streetwear, elevated.",
+  title: 'Urban Axis',
+  description: 'Curated streetwear. Real products. Fast checkout.',
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
-  // SSR-safe: no window usage here. Light inline theming only.
   return (
     <html lang="en">
       <body
         style={{
           margin: 0,
           fontFamily:
-            'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji"',
-          background: "#fff",
-          color: "#111",
+            'system-ui, -apple-system, Segoe UI, Roboto, Inter, Helvetica, Arial, sans-serif',
+          background: '#fff',
+          color: '#111827',
         }}
       >
         {children}

@@ -1,95 +1,91 @@
 // lib/loadProducts.ts
-// Robust loader that merges curated + legacy feed without mutating originals.
+// Combines curated overlay (if present) with the legacy feed from '@/lib/products'.
+// Safe even if 'ua-new-products' is missing; it falls back to legacy only.
 
-import { UA_NEW_PRODUCTS } from "@/lib/ua-new-products";
+import type { Gender, Category } from '@/lib/catalog';
 
-// Align with catalog expectations: Gender | "unisex" | undefined
-export type UA_Gender = "men" | "women" | "unisex" | undefined;
-
-export type AnyProduct = {
+// Legacy feed shape is flexible; ensure we handle common keys.
+type LegacyProduct = {
   id?: string;
   title?: string;
-  name?: string;
   price?: number | string;
-  gender?: UA_Gender | string; // accept loose input, normalize below
-  category?: "tops" | "bottoms" | "jackets" | "accessories" | string;
+  gender?: Gender | string;
+  category?: Category | string;
   url?: string;
-  images?: string[];
   image?: string;
-  slug?: string;
+  images?: string[];
   tags?: string[];
+  slug?: string;
   [key: string]: any;
 };
 
-function toSlug(p: AnyProduct): string | undefined {
-  if (p.slug && typeof p.slug === "string") return p.slug;
-  const base =
-    (typeof p.title === "string" && p.title) ||
-    (typeof p.name === "string" && p.name) ||
-    (typeof p.url === "string" &&
-      p.url.split("/").filter(Boolean).pop()?.split(".")[0]) ||
-    undefined;
-  return base
-    ?.toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
+type CuratedProduct = {
+  id?: string;
+  title: string;
+  price: number | string;
+  gender: Gender;
+  category: Category;
+  url: string;
+  images: string[];
+  tags?: string[];
+};
 
-// normalize primary image selection: image ?? images[0]
-export function primaryImage(p: AnyProduct): string | undefined {
-  if (typeof p.image === "string" && p.image.length) return p.image;
-  if (Array.isArray(p.images) && p.images.length) return p.images[0];
-  return undefined;
-}
+export type UnifiedProduct = (LegacyProduct | CuratedProduct) & {
+  __source?: 'curated' | 'legacy';
+};
 
-function normalizeGender(g: unknown): UA_Gender {
-  if (!g) return undefined;
-  const s = String(g).toLowerCase();
-  if (s === "men" || s === "male" || s === "m") return "men";
-  if (s === "women" || s === "female" || s === "w") return "women";
-  if (s === "unisex" || s === "all") return "unisex";
-  return undefined; // anything else becomes undefined
-}
+export async function loadAllProducts(): Promise<UnifiedProduct[]> {
+  // 1) Load legacy feed (required)
+  const legacyModule = await import('@/lib/products');
+  const legacyRaw: any =
+    legacyModule.default ??
+    legacyModule.products ??
+    legacyModule.PRODUCTS ??
+    [];
 
-async function loadLegacyProducts(): Promise<AnyProduct[]> {
+  const legacy: UnifiedProduct[] = Array.isArray(legacyRaw)
+    ? legacyRaw.map((p: any) => ({ ...p, __source: 'legacy' as const }))
+    : [];
+
+  // 2) Try to load curated overlay (optional, safe if missing)
+  let curated: UnifiedProduct[] = [];
   try {
-    const mod: any = await import("@/lib/products");
-    // Support common export shapes
-    if (Array.isArray(mod.default)) return mod.default as AnyProduct[];
-    if (Array.isArray(mod.products)) return mod.products as AnyProduct[];
-    if (Array.isArray(mod.PRODUCTS)) return mod.PRODUCTS as AnyProduct[];
-    if (typeof mod.getProducts === "function") {
-      const out = await mod.getProducts();
-      if (Array.isArray(out)) return out as AnyProduct[];
-    }
-    for (const k of Object.keys(mod)) {
-      if (Array.isArray(mod[k])) return mod[k] as AnyProduct[];
-    }
-    return [];
+    // @ts-ignore - file may not exist yet; we intentionally try/catch
+    const curatedModule = await import('@/lib/ua-new-products');
+    const arr =
+      curatedModule?.UA_NEW_PRODUCTS && Array.isArray(curatedModule.UA_NEW_PRODUCTS)
+        ? curatedModule.UA_NEW_PRODUCTS
+        : [];
+    curated = arr.map((p: any) => ({
+      ...p,
+      __source: 'curated' as const,
+      // ensure images array exists
+      images: Array.isArray(p.images) ? p.images : (p.image ? [p.image] : []),
+    }));
   } catch {
-    return [];
+    // no curated overlay present — that's fine
+    curated = [];
   }
-}
 
-export async function loadAllProducts(): Promise<AnyProduct[]> {
-  const legacy = await loadLegacyProducts();
+  // 3) Merge: curated first, then legacy.
+  // If an ID or URL matches, keep curated (assume curated takes precedence).
+  const seen = new Set<string>();
+  const merged: UnifiedProduct[] = [];
 
-  const curated = UA_NEW_PRODUCTS.map((p) => ({
-    ...p,
-    slug: toSlug(p) ?? cryptoRandomSlug(),
-    gender: normalizeGender(p.gender),
-  }));
+  for (const p of curated) {
+    const key = (p.id ?? p.url ?? p.title ?? JSON.stringify(p)).toString();
+    if (!seen.has(key)) {
+      seen.add(key);
+      merged.push(p);
+    }
+  }
+  for (const p of legacy) {
+    const key = (p.id ?? p.url ?? p.title ?? JSON.stringify(p)).toString();
+    if (!seen.has(key)) {
+      seen.add(key);
+      merged.push(p);
+    }
+  }
 
-  const normalizedLegacy = legacy.map((p) => ({
-    ...p,
-    slug: toSlug(p) ?? cryptoRandomSlug(),
-    gender: normalizeGender(p.gender),
-  }));
-
-  // Curated first
-  return [...curated, ...normalizedLegacy];
-}
-
-function cryptoRandomSlug() {
-  return `item-${Math.random().toString(36).slice(2, 9)}`;
+  return merged;
 }
