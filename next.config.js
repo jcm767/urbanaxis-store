@@ -1,12 +1,19 @@
+// next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
     remotePatterns: [
-      { protocol: 'https', hostname: 'ae-pic-a1.aliexpress-media.com' },
-      // add other hosts you might use:
-      { protocol: 'https', hostname: 'ae01.alicdn.com' },
-      { protocol: 'https', hostname: 'ae01.aliexpress-media.com' },
+      // AliExpress & AliCDN (common product image hosts)
+      { protocol: "https", hostname: "ae01.alicdn.com" },
+      { protocol: "https", hostname: "img.alicdn.com" },
+      { protocol: "https", hostname: "aliexpress.ru" },
+      { protocol: "https", hostname: "www.aliexpress.com" },
+      { protocol: "https", hostname: "*.aliexpress-media.com" },
+      // Add your own CDN(s) here as needed
     ],
+  },
+  experimental: {
+    typedRoutes: true,
   },
 };
 
