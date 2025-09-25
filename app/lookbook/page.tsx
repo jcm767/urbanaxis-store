@@ -1,42 +1,78 @@
 // app/lookbook/page.tsx
-'use client';
-import Link from 'next/link';
-import { getAllProducts, getImage, getName, getPrice, getSlug } from '@/lib/productUtils';
+// Visual-first grid that uses primary images from the unified loader.
+// Eliminates missing imports from productUtils.
 
-export default function Lookbook(){
-  const all = getAllProducts();
-  // Simple curated looks: pick 3 random outfits of 3 items
-  const groups: any[] = [];
-  for(let i=0;i<Math.min(3, Math.floor(all.length/3));i++){
-    groups.push([all[(i*3)%all.length], all[(i*3+1)%all.length], all[(i*3+2)%all.length]]);
-  }
+import Image from "next/image";
+import Link from "next/link";
+import { loadAllProducts, primaryImage } from "@/lib/loadProducts";
+
+export const dynamic = "force-static";
+
+export default async function LookbookPage() {
+  const all = await loadAllProducts();
+  const showcase = all.slice(0, 24); // a lightweight selection
+
   return (
-    <main style={{maxWidth:1200,margin:'24px auto',padding:'0 16px'}}>
-      <h1>Lookbook — Shop the Look</h1>
-      <p>Complete outfits curated from our latest drops.</p>
-      <div style={{display:'grid',gap:16}}>
-        {groups.map((g,idx)=>(
-          <div key={idx} style={{border:'1px solid var(--border)',borderRadius:12,padding:12,background:'var(--card)'}}>
-            <h3 style={{marginTop:0}}>Look #{idx+1}</h3>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:12}}>
-              {g.map((p:any)=>{
-                const name=getName(p); const price=getPrice(p); const slug=getSlug(p);
-                return (
-                  <Link key={slug} href={`/products/${slug}`} style={{textDecoration:'none',color:'var(--text)',border:'1px solid var(--border)',borderRadius:12,overflow:'hidden',background:'var(--card)'}}>
-                    <div style={{aspectRatio:'1/1',background:'#f4f4f5',display:'grid',placeItems:'center'}}>
-                      {getImage(p)?<img src={getImage(p)!} alt={name} style={{width:'100%',height:'100%',objectFit:'cover'}}/>:'IMG'}
+    <main style={{ padding: 24, maxWidth: 1400, margin: "0 auto" }}>
+      <header style={{ marginBottom: 16 }}>
+        <h1 style={{ margin: 0 }}>Lookbook</h1>
+        <p style={{ opacity: 0.8 }}>
+          A visual pass through curated and trending pieces.
+        </p>
+      </header>
+
+      {showcase.length === 0 ? (
+        <p>Nothing to show yet.</p>
+      ) : (
+        <section
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+            gap: 16,
+          }}
+        >
+          {showcase.map((p, i) => {
+            const img = primaryImage(p);
+            const title = p.title ?? p.name ?? "Untitled";
+            return (
+              <Link
+                key={p.slug ?? p.id ?? i}
+                href={`/products/${p.slug}`}
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                <div
+                  style={{
+                    borderRadius: 14,
+                    overflow: "hidden",
+                    border: "1px solid #eee",
+                    background: "#fff",
+                  }}
+                >
+                  <div style={{ aspectRatio: "1/1", position: "relative" }}>
+                    {img ? (
+                      <Image
+                        src={img}
+                        alt={title}
+                        fill
+                        style={{ objectFit: "cover" }}
+                        sizes="(max-width: 768px) 50vw, 25vw"
+                        priority={i < 6}
+                      />
+                    ) : (
+                      <div style={{ width: "100%", height: "100%", background: "#f2f2f2" }} />
+                    )}
+                  </div>
+                  <div style={{ padding: 12 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, lineHeight: 1.3 }}>
+                      {title}
                     </div>
-                    <div style={{padding:10}}>
-                      <div style={{fontWeight:700,fontSize:14,marginBottom:4}}>{name}</div>
-                      <div style={{fontSize:13,opacity:.75}}>${price.toFixed(2)}</div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
+                  </div>
+                </div>
+              </Link>
+            );
+          })}
+        </section>
+      )}
     </main>
   );
 }

@@ -1,32 +1,33 @@
 // lib/loadProducts.ts
 // Robust loader that merges curated + legacy feed without mutating originals.
-// Handles varied legacy export shapes gracefully.
 
 import { UA_NEW_PRODUCTS } from "@/lib/ua-new-products";
+
+// Align with catalog expectations: Gender | "unisex" | undefined
+export type UA_Gender = "men" | "women" | "unisex" | undefined;
 
 export type AnyProduct = {
   id?: string;
   title?: string;
   name?: string;
   price?: number | string;
-  gender?: "men" | "women" | string;
+  gender?: UA_Gender | string; // accept loose input, normalize below
   category?: "tops" | "bottoms" | "jackets" | "accessories" | string;
   url?: string;
   images?: string[];
   image?: string;
   slug?: string;
   tags?: string[];
-  // Allow extra unknown fields from legacy
   [key: string]: any;
 };
 
-// attempt to produce a slug from title or url if missing
 function toSlug(p: AnyProduct): string | undefined {
   if (p.slug && typeof p.slug === "string") return p.slug;
   const base =
     (typeof p.title === "string" && p.title) ||
     (typeof p.name === "string" && p.name) ||
-    (typeof p.url === "string" && p.url.split("/").filter(Boolean).pop()?.split(".")[0]) ||
+    (typeof p.url === "string" &&
+      p.url.split("/").filter(Boolean).pop()?.split(".")[0]) ||
     undefined;
   return base
     ?.toLowerCase()
@@ -41,6 +42,15 @@ export function primaryImage(p: AnyProduct): string | undefined {
   return undefined;
 }
 
+function normalizeGender(g: unknown): UA_Gender {
+  if (!g) return undefined;
+  const s = String(g).toLowerCase();
+  if (s === "men" || s === "male" || s === "m") return "men";
+  if (s === "women" || s === "female" || s === "w") return "women";
+  if (s === "unisex" || s === "all") return "unisex";
+  return undefined; // anything else becomes undefined
+}
+
 async function loadLegacyProducts(): Promise<AnyProduct[]> {
   try {
     const mod: any = await import("@/lib/products");
@@ -52,7 +62,6 @@ async function loadLegacyProducts(): Promise<AnyProduct[]> {
       const out = await mod.getProducts();
       if (Array.isArray(out)) return out as AnyProduct[];
     }
-    // Fallback: scan object values for arrays
     for (const k of Object.keys(mod)) {
       if (Array.isArray(mod[k])) return mod[k] as AnyProduct[];
     }
@@ -64,21 +73,23 @@ async function loadLegacyProducts(): Promise<AnyProduct[]> {
 
 export async function loadAllProducts(): Promise<AnyProduct[]> {
   const legacy = await loadLegacyProducts();
+
   const curated = UA_NEW_PRODUCTS.map((p) => ({
     ...p,
     slug: toSlug(p) ?? cryptoRandomSlug(),
+    gender: normalizeGender(p.gender),
   }));
-  // Do not mutate legacy; just ensure it has a slug if missing
+
   const normalizedLegacy = legacy.map((p) => ({
     ...p,
     slug: toSlug(p) ?? cryptoRandomSlug(),
+    gender: normalizeGender(p.gender),
   }));
+
   // Curated first
   return [...curated, ...normalizedLegacy];
 }
 
-// Tiny slug helper if nothing else works
 function cryptoRandomSlug() {
-  // Not crypto-secure in edge runtime, but fine for static paths
   return `item-${Math.random().toString(36).slice(2, 9)}`;
 }
