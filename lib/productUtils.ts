@@ -1,29 +1,13 @@
 // lib/productUtils.ts
-// Unifies product helpers used across pages. These are intentionally
-// resilient to partial/messy product shapes.
-//
-// Exports expected by existing pages:
-// - getAllProducts
-// - getName
-// - getPrice
-// - getSlug
-// - getImage
-// - getImageForColor
-// - getColors
-// - getSearchKeywords
-// Also keep the previous names used elsewhere:
-// - productPrimaryImage
-// - formatPrice
-
 import { loadAllProducts } from '@/lib/loadProducts';
 
-type AnyRecord = Record<string, any>;
+type AnyProduct = Record<string, any>;
 
-export async function getAllProducts(): Promise<AnyRecord[]> {
+export async function getAllProducts(): Promise<AnyProduct[]> {
   return await loadAllProducts();
 }
 
-export function getName(p: AnyRecord): string {
+export function getName(p: AnyProduct): string {
   return String(p?.title ?? p?.name ?? 'Untitled product');
 }
 
@@ -37,7 +21,6 @@ export function formatPrice(val: any): string {
   if (!isFinite(n)) return typeof val === 'string' ? val : '';
   return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(n);
 }
-
 export const getPrice = formatPrice;
 
 function slugify(input: string): string {
@@ -47,7 +30,7 @@ function slugify(input: string): string {
     .replace(/(^-|-$)+/g, '');
 }
 
-export function getSlug(p: AnyRecord): string {
+export function getSlug(p: AnyProduct): string {
   return (
     p?.slug ??
     (typeof p?.url === 'string' ? p.url : undefined) ??
@@ -56,14 +39,12 @@ export function getSlug(p: AnyRecord): string {
   );
 }
 
-export function productPrimaryImage(p: AnyRecord): string | undefined {
+export function productPrimaryImage(p: AnyProduct): string | undefined {
   return p?.image ?? (Array.isArray(p?.images) ? p.images[0] : undefined);
 }
-
 export const getImage = productPrimaryImage;
 
-export function getColors(p: AnyRecord): string[] {
-  // Try known fields; fall back to tags that look like colors.
+export function getColors(p: AnyProduct): string[] {
   const colors = p?.colors ?? p?.variants?.colors ?? [];
   if (Array.isArray(colors) && colors.length) return colors;
 
@@ -76,8 +57,7 @@ export function getColors(p: AnyRecord): string[] {
   return colorish.length ? colorish : [];
 }
 
-export function getImageForColor(p: AnyRecord, color: string): string | undefined {
-  // If product has a color->image map, prefer it. Otherwise return primary image.
+export function getImageForColor(p: AnyProduct, color: string): string | undefined {
   const map = p?.imagesByColor ?? p?.images_by_color ?? p?.variantImages ?? null;
   if (map && typeof map === 'object') {
     const key = Object.keys(map).find((k) => k.toLowerCase() === color.toLowerCase());
@@ -90,7 +70,7 @@ export function getImageForColor(p: AnyRecord, color: string): string | undefine
   return productPrimaryImage(p);
 }
 
-export function getSearchKeywords(p: AnyRecord): string {
+export function getSearchKeywords(p: AnyProduct): string {
   const base = [getName(p)];
   if (Array.isArray(p?.tags)) base.push(...p.tags.map(String));
   if (p?.category) base.push(String(p.category));
