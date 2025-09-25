@@ -86,3 +86,8 @@ export async function loadAllProducts(): Promise<UnifiedProduct[]> {
 
   return merged;
 }
+
+// Primary image helper exported for convenience (used by products/[slug])
+export function primaryImage(p: any): string | undefined {
+  return p?.image ?? (Array.isArray(p?.images) ? p.images[0] : undefined);
+}
