@@ -40,6 +40,15 @@ export function getSlug(p: AnyProduct): string {
   );
 }
 
+// New: fetch a single product by slug (with url/id fallbacks)
+export async function getBySlug(slug: string): Promise<AnyProduct | undefined> {
+  const all = await loadAllProducts();
+  return (
+    all.find((p: AnyProduct) => getSlug(p) === slug) ??
+    all.find((p: AnyProduct) => p?.url === slug || p?.id === slug)
+  );
+}
+
 export function productPrimaryImage(p: AnyProduct): string | undefined {
   return p?.image ?? (Array.isArray(p?.images) ? p.images[0] : undefined);
 }
