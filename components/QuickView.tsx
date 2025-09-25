@@ -9,18 +9,17 @@ import {
   getColors,
   getName,
   getPrice,
+  getSlug,
 } from '@/lib/productUtils';
 
 type Prod = Record<string, any>;
 
 export default function QuickView() {
-  // Read ?qv=<slug> from the URL on the client; if absent, render nothing.
   const [slug, setSlug] = useState<string | undefined>(undefined);
   const [open, setOpen] = useState(false);
   const [product, setProduct] = useState<Prod | null>(null);
   const [color, setColor] = useState<string | undefined>(undefined);
 
-  // get slug once on mount (client-only)
   useEffect(() => {
     try {
       const u = new URL(window.location.href);
@@ -30,11 +29,10 @@ export default function QuickView() {
         setOpen(true);
       }
     } catch {
-      // ignore
+      /* no-op */
     }
   }, []);
 
-  // fetch product when slug is present
   useEffect(() => {
     if (!slug) return;
     let mounted = true;
@@ -57,7 +55,10 @@ export default function QuickView() {
   if (!open || !product) return null;
 
   const name = getName(product);
-  const priceStr = getPrice(product?.price); // <-- formatted string (no .toFixed())
+  const priceStr = getPrice(product?.price);
+  const numericPrice =
+    Number(String(product?.price ?? '').replace(/[^\d.]/g, '')) || 0;
+  const itemSlug = getSlug(product) || slug || name;
 
   return (
     <div
@@ -141,13 +142,12 @@ export default function QuickView() {
             <button
               onClick={() =>
                 addItem({
-                  id: String(product?.id ?? slug ?? name),
+                  // IMPORTANT: align with CartItem type in '@/lib/cart' (no 'id' field)
+                  slug: String(itemSlug),
                   title: name,
-                  price: Number(String(product?.price).replace(/[^\d.]/g, '')) || 0,
+                  price: numericPrice,
                   image: img,
-                  // keep original product for downstream use
-                  metadata: { slug, color, source: product?.__source },
-                })
+                } as any)
               }
               style={{
                 marginTop: 12,
