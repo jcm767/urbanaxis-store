@@ -36,11 +36,11 @@ export type UnifiedProduct = (LegacyProduct | CuratedProduct) & {
 
 export async function loadAllProducts(): Promise<UnifiedProduct[]> {
   // 1) Load legacy feed (required)
-  const legacyModule = await import('@/lib/products');
+  const legacyModule: any = await import('@/lib/products');
   const legacyRaw: any =
-    legacyModule.default ??
-    legacyModule.products ??
-    legacyModule.PRODUCTS ??
+    (legacyModule as any).default ??
+    (legacyModule as any).products ??
+    (legacyModule as any).PRODUCTS ??
     [];
 
   const legacy: UnifiedProduct[] = Array.isArray(legacyRaw)
@@ -51,7 +51,7 @@ export async function loadAllProducts(): Promise<UnifiedProduct[]> {
   let curated: UnifiedProduct[] = [];
   try {
     // @ts-ignore - file may not exist yet; we intentionally try/catch
-    const curatedModule = await import('@/lib/ua-new-products');
+    const curatedModule: any = await import('@/lib/ua-new-products');
     const arr =
       curatedModule?.UA_NEW_PRODUCTS && Array.isArray(curatedModule.UA_NEW_PRODUCTS)
         ? curatedModule.UA_NEW_PRODUCTS
