@@ -1,9 +1,5 @@
 {
-  "redirects": [
-    {
-      "source": "/(.*)",
-      "destination": "https://theurbanaxis.com/$1",
-      "permanent": true
-    }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/$1" }
   ]
 }
