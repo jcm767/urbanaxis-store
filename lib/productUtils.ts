@@ -1,58 +1,58 @@
-import { loadAllProducts } from "./loadProducts";
-export function productPrimaryImage(p:any){ return p?.image ?? (Array.isArray(p?.images)?p.images[0]:undefined); }
-export function formatPrice(v:number|string|undefined){ const n = typeof v==="string"? Number(String(v).replace(/[^\d.]/g,"")): (v??0); return `$${(isFinite(n)?n:0).toFixed(2)}`; }
-export async function getAllProducts(){ return loadAllProducts(); }
-export function getName(p:any){ return String(p?.title ?? p?.name ?? "Untitled product"); }
-export function getSlug(p:any){ if(p?.slug) return String(p.slug); const b = String(p?.title ?? p?.name ?? ""); return b? b.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,""):undefined; }
-export function getPrice(x:any){ return formatPrice(x?.price ?? x); }
-export function getColors(p:any){ const c = p?.colors ?? p?.colorOptions ?? []; return Array.isArray(c)? c.map(String):[]; }
-export function getSearchKeywords(p:any){ const tags = Array.isArray(p?.tags)? p.tags:[]; const name = (p?.title ?? p?.name ?? "").toString(); return [...tags, name].filter(Boolean); }
-export function getImage(p:any){ return productPrimaryImage(p); }
-export function getImageForColor(p:any,color:string){ const by = p?.imagesByColor?.[color]; return Array.isArray(by)&&by[0]? by[0]: getImage(p); }
-//
-// --- Client helpers: getAllProductsClient / getBySlug -----------------------
-type AnyProductLike = any; // stays flexible for curated/legacy merge
+export type AnyProduct = {
+  id?: string;
+  title?: string;
+  name?: string;
+  price?: number | string;
+  image?: string | null;
+  images?: string[] | any;     // tolerate jsonb or text[] shapes
+  primary_image?: string | null;
+};
 
-let __UA_ALL_CLIENT: AnyProductLike[] | null = null;
-
-/**
- * Build a client-side merged list of products (curated + legacy).
- * Works in the browser because these modules are simple arrays.
- */
-export function getAllProductsClient(): AnyProductLike[] {
-  if (__UA_ALL_CLIENT) return __UA_ALL_CLIENT;
-
-  // Curated (new) feed
-  let curated: AnyProductLike[] = [];
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const curatedMod = require("./ua-new-products");
-    curated =
-      curatedMod?.UA_NEW_PRODUCTS ??
-      curatedMod?.default ??
-      [];
-  } catch {}
-
-  // Legacy feed (accepts several shapes: default / products / PRODUCTS)
-  let legacy: AnyProductLike[] = [];
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const legacyMod = require("./products");
-    const raw =
-      legacyMod?.default ??
-      legacyMod?.products ??
-      legacyMod?.PRODUCTS ??
-      [];
-    if (Array.isArray(raw)) legacy = raw;
-  } catch {}
-
-  __UA_ALL_CLIENT = [...curated, ...legacy];
-  return __UA_ALL_CLIENT;
+function firstFromUnknownImages(images: any): string | undefined {
+  if (!images) return undefined;
+  // If already string[]
+  if (Array.isArray(images)) {
+    return images.length ? String(images[0]) : undefined;
+  }
+  // If jsonb/object that behaves like an array
+  if (typeof images === "object" && images !== null) {
+    // try common shapes
+    if (Array.isArray((images as any))) {
+      const arr = images as unknown as any[];
+      return arr.length ? String(arr[0]) : undefined;
+    }
+    // try numeric keys: {"0": "..."}
+    if (images["0"]) return String(images["0"]);
+  }
+  return undefined;
 }
 
-/** Find a product by slug from the merged client list. */
-export function getBySlug(slug: string): AnyProductLike | null {
-  if (!slug) return null;
-  const all = getAllProductsClient();
-  return all.find((p: any) => p?.slug === slug) ?? null;
+/**
+ * Returns the safest possible primary image for a product.
+ * Priority: product.image -> product.images[0] (any shape) -> product.primary_image -> /placeholder.svg
+ */
+export function productPrimaryImage(p: AnyProduct | undefined | null): string {
+  if (!p) return "/placeholder.svg";
+  const fromDirect = p.image && String(p.image).trim();
+  const fromArrayish = firstFromUnknownImages(p.images);
+  const fromPrimary = p.primary_image && String(p.primary_image).trim();
+
+  return (
+    (fromDirect && String(fromDirect)) ||
+    (fromArrayish && String(fromArrayish)) ||
+    (fromPrimary && String(fromPrimary)) ||
+    "/placeholder.svg"
+  );
+}
+
+/**
+ * Formats a price that may come as number or string (e.g., "29.99", "$29.99").
+ * Always returns a "$12.34" style USD string.
+ */
+export function formatPrice(value: number | string | undefined | null): string {
+  if (value == null) return "$0.00";
+  const num = typeof value === "number"
+    ? value
+    : Number(String(value).replace(/[^\d.]/g, "")) || 0;
+  return `$${num.toFixed(2)}`;
 }
