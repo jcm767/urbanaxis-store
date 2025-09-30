@@ -1,82 +1,135 @@
-// components/MiniCart.tsx
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
-import { getCart, clearCart, removeItem, updateQty } from '@/lib/cart';
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import {
+  type CartItem,
+  getCart,
+  updateQty,
+  removeItem,
+  clearCart,
+} from "@/lib/cart";
 
 export default function MiniCart() {
+  const [items, setItems] = useState<CartItem[]>([]);
   const [open, setOpen] = useState(false);
-  const [items, setItems] = useState<any[]>([]);
 
-  function recalc() { setItems(getCart()); }
+  function refresh() {
+    setItems(getCart());
+  }
 
   useEffect(() => {
-    recalc();
-    const onCart = () => recalc();
-    const onToggle = () => setOpen((v) => !v);
-    window.addEventListener('cart:update', onCart);
-    window.addEventListener('minicart:toggle', onToggle);
-    return () => {
-      window.removeEventListener('cart:update', onCart);
-      window.removeEventListener('minicart:toggle', onToggle);
-    };
+    refresh();
+    const onUpdate = () => refresh();
+    window.addEventListener("cart:update", onUpdate);
+    return () => window.removeEventListener("cart:update", onUpdate);
   }, []);
 
-  const subtotal = useMemo(()=>items.reduce((s, it)=> s + (it.price*it.qty), 0), [items]);
-
-  if (!open) return null;
+  const subtotal = items.reduce((sum, it) => sum + it.price * (it.quantity ?? 1), 0);
 
   return (
-    <div style={{
-      position:'fixed', top:64, right:12, zIndex:60, width:340,
-      background:'#fff', border:'1px solid #eee', borderRadius:12,
-      boxShadow:'0 10px 30px rgba(0,0,0,0.12)', overflow:'hidden'
-    }}>
-      <div style={{ padding:12, display:'flex', alignItems:'center', justifyContent:'space-between', borderBottom:'1px solid #eee' }}>
-        <strong>Cart</strong>
-        <button onClick={()=>setOpen(false)} style={{ background:'transparent', border:'none', fontSize:18, cursor:'pointer' }}>×</button>
-      </div>
-      <div style={{ maxHeight:300, overflow:'auto' }}>
-        {items.length === 0 ? (
-          <div style={{ padding:12, color:'#666' }}>Your cart is empty.</div>
-        ) : items.map((it)=>(
-          <div key={`${it.slug}-${it.size ?? 'nosize'}-${it.color ?? 'nocolor'}`} style={{ display:'grid', gridTemplateColumns:'64px 1fr', gap:10, padding:10, borderBottom:'1px solid #f3f3f3' }}>
-            <div style={{ width:64, height:64, background:'#f4f4f5', display:'grid', placeItems:'center' }}>
-              {it.image ? <img src={it.image} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/> : 'IMG'}
-            </div>
-            <div style={{ display:'grid', gap:6 }}>
-              <div style={{ fontWeight:600, fontSize:13, lineHeight:1.1 }}>{it.title}</div>
-              <div style={{ fontSize:12, color:'#666' }}>
-                {it.size ? `Size ${it.size} · ` : ''}{it.color ? `Color ${it.color} · ` : ''}${Number(it.price).toFixed(2)}
-              </div>
-              <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-                <input type="number" min={1} max={99} value={it.qty}
-                  onChange={(e)=>{ updateQty(it.slug, it.size ?? null, Number(e.target.value)||1, it.color ?? null); window.dispatchEvent(new Event('cart:update')); }}
-                  style={{ width:64, padding:'6px 8px', border:'1px solid #ddd', borderRadius:8 }}/>
-                <button onClick={()=>{ removeItem(it.slug, it.size ?? null, it.color ?? null); window.dispatchEvent(new Event('cart:update')); }}
-                  style={{ border:'1px solid #eee', background:'transparent', borderRadius:8, padding:'6px 8px', cursor:'pointer' }}>Remove</button>
-              </div>
-            </div>
+    <div style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{ border: "1px solid #eee", borderRadius: 8, padding: "6px 10px", background: "transparent" }}
+      >
+        Cart ({items.reduce((n, it) => n + (it.quantity ?? 1), 0)})
+      </button>
+
+      {open && (
+        <div
+          style={{
+            position: "absolute",
+            right: 0,
+            top: "calc(100% + 8px)",
+            width: 360,
+            background: "var(--card, #fff)",
+            border: "1px solid var(--border, #eee)",
+            borderRadius: 12,
+            padding: 12,
+            boxShadow: "0 8px 24px rgba(0,0,0,.08)",
+            zIndex: 40,
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <strong>Mini Cart</strong>
+            <button
+              onClick={() => { clearCart(); refresh(); window.dispatchEvent(new Event("cart:update")); }}
+              style={{ border: "1px solid #eee", padding: "6px 10px", borderRadius: 8, background: "transparent" }}
+            >
+              Clear
+            </button>
           </div>
-        ))}
-      </div>
-      <div style={{ padding:12, borderTop:'1px solid #eee' }}>
-        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:10 }}>
-          <span>Subtotal</span><strong>${subtotal.toFixed(2)}</strong>
+
+          {!items.length && <div style={{ opacity: .75 }}>Your cart is empty.</div>}
+
+          {!!items.length && (
+            <div style={{ display: "grid", gap: 10 }}>
+              {items.map((it) => (
+                <div
+                  key={`${it.id}-${it.size ?? "nosize"}`}
+                  style={{ display: "grid", gridTemplateColumns: "64px 1fr", gap: 10, alignItems: "center" }}
+                >
+                  <div style={{ width: 64, height: 64, overflow: "hidden", borderRadius: 8, border: "1px solid #eee" }}>
+                    {it.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={it.image} alt={it.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : null}
+                  </div>
+
+                  <div>
+                    <div style={{ fontWeight: 600, lineHeight: 1.2 }}>
+                      <Link href={`/products/${it.id}`}>{it.title}</Link>
+                    </div>
+                    <div style={{ fontSize: 12, opacity: .8 }}>
+                      {it.size ? <>Size: {it.size} · </> : null}${it.price.toFixed(2)}
+                    </div>
+
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
+                      <input
+                        type="number"
+                        min={1}
+                        max={99}
+                        value={it.quantity}
+                        onChange={(e) => {
+                          const next = Math.max(1, Number(e.target.value) || 1);
+                          updateQty(it.id, it.size, next);
+                          refresh();
+                          window.dispatchEvent(new Event("cart:update"));
+                        }}
+                        style={{ width: 64, padding: "6px 8px", border: "1px solid #ddd", borderRadius: 8 }}
+                      />
+                      <button
+                        onClick={() => {
+                          removeItem(it.id, it.size);
+                          refresh();
+                          window.dispatchEvent(new Event("cart:update"));
+                        }}
+                        style={{ border: "1px solid #eee", background: "transparent", borderRadius: 8, padding: "6px 8px", cursor: "pointer" }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!!items.length && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10 }}>
+              <div style={{ fontWeight: 700 }}>Subtotal: ${subtotal.toFixed(2)}</div>
+              <Link
+                href="/cart"
+                onClick={() => setOpen(false)}
+                style={{ border: "1px solid #111", color: "#fff", background: "#111", borderRadius: 8, padding: "8px 12px" }}
+              >
+                View Cart
+              </Link>
+            </div>
+          )}
         </div>
-        <div style={{ display:'flex', gap:8 }}>
-          <Link href="/cart" style={{ flex:1, textAlign:'center', textDecoration:'none', border:'1px solid #111', color:'#111', borderRadius:10, padding:'10px 12px' }}>
-            View Cart
-          </Link>
-          <button onClick={()=>{
-              if (confirm('Clear all items?')) { clearCart(); window.dispatchEvent(new Event('cart:update')); }
-            }}
-            style={{ border:'1px solid #ddd', background:'#fff', color:'#111', borderRadius:10, padding:'10px 12px', cursor:'pointer' }}>
-            Clear
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

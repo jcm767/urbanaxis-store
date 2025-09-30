@@ -1,234 +1,151 @@
-// app/cart/page.tsx
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
-import TrustBadges from '@/components/TrustBadges';
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import {
-  CartItem,
+  type CartItem,
   getCart,
-  setCart,
   updateQty,
   updateSize,
   removeItem,
   clearCart,
-} from '@/lib/cart';
-
-const FALLBACK_SIZES = ['XS', 'S', 'M', 'L', 'XL'];
+} from "@/lib/cart";
 
 export default function CartPage() {
   const [items, setItems] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(false);
 
-  // Load cart on mount + when other tabs update it
   useEffect(() => {
     setItems(getCart());
-    const onChange = () => setItems(getCart());
-    window.addEventListener('cart:update', onChange);
-    return () => window.removeEventListener('cart:update', onChange);
   }, []);
 
   const subtotal = useMemo(
-    () => items.reduce((sum, it) => sum + it.price * it.qty, 0),
+    () => items.reduce((sum, it) => sum + it.price * (it.quantity ?? 1), 0),
     [items]
   );
 
-  function handleQty(slug: string, size: string | null, qty: number) {
-    updateQty(slug, size, qty);
+  function refresh() {
     setItems(getCart());
   }
 
-  function handleSize(slug: string, oldSize: string | null, newSize: string | null) {
-    updateSize(slug, oldSize, newSize);
-    setItems(getCart());
+  function handleQty(id: string, size: string | undefined, qty: number) {
+    updateQty(id, size, qty);
+    refresh();
   }
 
-  function handleRemove(slug: string, size: string | null) {
-    removeItem(slug, size);
-    setItems(getCart());
+  function handleSize(id: string, newSize: string | undefined) {
+    updateSize(id, newSize);
+    refresh();
   }
 
-  async function checkout() {
-    try {
-      setLoading(true);
-      // keep cart persisted just in case
-      setCart(items);
-      const res = await fetch('/api/checkout', { method: 'POST' });
-      const data = await res.json();
-      if (data?.url) window.location.href = data.url;
-      else alert('Checkout error');
-    } catch (e: any) {
-      alert(e?.message ?? 'Checkout failed');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  if (!items.length) {
-    return (
-      <main style={{ maxWidth: 960, margin: '24px auto', padding: '0 16px' }}>
-        <h1 style={{ marginBottom: 12 }}>Your Cart</h1>
-        <p>Your cart is empty.</p>
-        <Link href="/products" style={{ color: '#111', borderBottom: '1px solid #111', textDecoration: 'none' }}>
-          Browse products →
-        </Link>
-      </main>
-    );
+  function handleRemove(id: string, size?: string) {
+    removeItem(id, size);
+    refresh();
   }
 
   return (
-    <main style={{ maxWidth: 960, margin: '24px auto', padding: '0 16px' }}>
-      <h1 style={{ marginBottom: 12 }}>Your Cart</h1>
+    <main style={{ maxWidth: 960, margin: "0 auto", padding: 24 }}>
+      <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 12 }}>Cart</h1>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 12 }}>
-        {items.map((it) => (
-          <div
-            key={`${it.slug}-${it.size ?? 'nosize'}`}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '96px 1fr',
-              gap: 12,
-              border: '1px solid #eee',
-              borderRadius: 12,
-              padding: 12,
-              background: '#fff',
-            }}
-          >
-            <div
+      {!items.length && <p>Your cart is empty.</p>}
+
+      {!!items.length && (
+        <>
+          <div style={{ display: "grid", gap: 12 }}>
+            {items.map((it) => (
+              <div
+                key={`${it.id}-${it.size ?? "nosize"}`}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "96px 1fr",
+                  gap: 12,
+                  border: "1px solid var(--border, #eee)",
+                  borderRadius: 8,
+                  padding: 12,
+                }}
+              >
+                <div style={{ width: 96, height: 96, overflow: "hidden" }}>
+                  {it.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={it.image}
+                      alt={it.title}
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  ) : null}
+                </div>
+
+                <div>
+                  <div style={{ fontWeight: 600 }}>
+                    <Link href={`/products/${it.id}`}>{it.title}</Link>
+                  </div>
+
+                  <div style={{ opacity: 0.8, fontSize: 13 }}>
+                    ${it.price.toFixed(2)}
+                  </div>
+
+                  <div style={{ display: "flex", gap: 10, marginTop: 8, alignItems: "center", flexWrap: "wrap" }}>
+                    <label>
+                      Qty:&nbsp;
+                      <input
+                        type="number"
+                        min={1}
+                        value={it.quantity}
+                        onChange={(e) =>
+                          handleQty(it.id, it.size, Number(e.target.value))
+                        }
+                        style={{ width: 64 }}
+                      />
+                    </label>
+
+                    <label>
+                      Size:&nbsp;
+                      <input
+                        type="text"
+                        placeholder="(optional)"
+                        value={it.size ?? ""}
+                        onChange={(e) =>
+                          handleSize(it.id, e.target.value || undefined)
+                        }
+                        style={{ width: 96 }}
+                      />
+                    </label>
+
+                    <button
+                      onClick={() => handleRemove(it.id, it.size)}
+                      style={{
+                        border: "1px solid var(--border, #ddd)",
+                        background: "var(--card, #fff)",
+                        borderRadius: 8,
+                        padding: "6px 10px",
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ marginTop: 16, display: "flex", justifyContent: "space-between" }}>
+            <button
+              onClick={() => { clearCart(); refresh(); }}
               style={{
-                width: 96,
-                height: 96,
-                background: '#f4f4f5',
-                display: 'grid',
-                placeItems: 'center',
-                fontSize: 12,
+                border: "1px solid var(--border, #ddd)",
+                background: "var(--card, #fff)",
+                borderRadius: 8,
+                padding: "8px 12px",
               }}
             >
-              IMG
-            </div>
+              Clear cart
+            </button>
 
-            <div style={{ display: 'grid', gap: 8 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                <div>
-                  <div style={{ fontWeight: 700 }}>{it.title}</div>
-                  <div style={{ fontSize: 13, color: '#666' }}>${it.price.toFixed(2)}</div>
-                </div>
-                <button
-                  onClick={() => handleRemove(it.slug, it.size ?? null)}
-                  style={{
-                    background: 'transparent',
-                    border: '1px solid #eee',
-                    borderRadius: 8,
-                    padding: '6px 10px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  Remove
-                </button>
-              </div>
-
-              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                {/* Size selector */}
-                <label style={{ fontSize: 14 }}>
-                  Size:{' '}
-                  <select
-                    value={it.size ?? ''}
-                    onChange={(e) =>
-                      handleSize(it.slug, it.size ?? null, e.target.value || null)
-                    }
-                    style={{ padding: '6px 8px', border: '1px solid #ddd', borderRadius: 6 }}
-                  >
-                    <option value="">Select</option>
-                    {FALLBACK_SIZES.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                {/* Quantity selector */}
-                <label style={{ fontSize: 14 }}>
-                  Qty:{' '}
-                  <input
-                    type="number"
-                    min={1}
-                    max={99}
-                    value={it.qty}
-                    onChange={(e) =>
-                      handleQty(it.slug, it.size ?? null, Number(e.target.value))
-                    }
-                    style={{
-                      width: 72,
-                      padding: '6px 8px',
-                      border: '1px solid #ddd',
-                      borderRadius: 6,
-                    }}
-                  />
-                </label>
-              </div>
+            <div style={{ fontWeight: 700, fontSize: 18 }}>
+              Subtotal: ${subtotal.toFixed(2)}
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* Summary */}
-      <div
-        style={{
-          marginTop: 16,
-          marginLeft: 'auto',
-          maxWidth: 420,
-          border: '1px solid #eee',
-          borderRadius: 12,
-          padding: 16,
-          background: '#fafafa',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-          <span>Subtotal</span>
-          <strong>${subtotal.toFixed(2)}</strong>
-        </div>
-        <div style={{ fontSize: 12, color: '#666', marginBottom: 12 }}>
-          Taxes and shipping calculated at checkout.
-        </div>
-
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button
-            onClick={checkout}
-            disabled={loading}
-            style={{
-              background: '#111',
-              color: '#fff',
-              border: '1px solid #111',
-              borderRadius: 10,
-              padding: '10px 14px',
-              cursor: 'pointer',
-              flex: 1,
-            }}
-          >
-            {loading ? 'Redirecting…' : 'Checkout'}
-          </button>
-          <button
-            onClick={() => {
-              if (confirm('Clear all items from cart?')) {
-                clearCart();
-                setItems([]);
-              }
-            }}
-            style={{
-              background: 'transparent',
-              color: '#111',
-              border: '1px solid #ddd',
-              borderRadius: 10,
-              padding: '10px 14px',
-              cursor: 'pointer',
-            }}
-          >
-            Clear
-          </button>
-        </div>
-        <TrustBadges />
-      </div>
+        </>
+      )}
     </main>
   );
 }
