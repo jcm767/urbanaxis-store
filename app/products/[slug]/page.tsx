@@ -89,7 +89,6 @@ export default async function ProductPage({ params }: PageProps) {
                 marginTop: 8,
               }}
             >
-              View Source Product
             </a>
           ) : null}
         </div>
